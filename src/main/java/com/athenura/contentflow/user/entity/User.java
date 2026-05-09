@@ -1,7 +1,7 @@
-package com.athenura.contentflow.entity;
+package com.athenura.contentflow.user.entity;
 
 
-import com.athenura.contentflow.enums.Role;
+import com.athenura.contentflow.commons.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 

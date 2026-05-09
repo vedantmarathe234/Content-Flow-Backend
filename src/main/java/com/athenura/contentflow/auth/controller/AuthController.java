@@ -1,5 +1,7 @@
 package com.athenura.contentflow.auth.controller;
 
+import com.athenura.contentflow.auth.dto.AuthResponseDTO;
+import com.athenura.contentflow.auth.dto.LoginRequestDTO;
 import com.athenura.contentflow.auth.dto.RegistrationRequestDTO;
 import com.athenura.contentflow.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -17,5 +19,10 @@ public class AuthController {
     @PostMapping("/register")
     public String register(@RequestBody RegistrationRequestDTO request){
         return authService.register(request);
+    }
+
+    @PostMapping("/login")
+    public AuthResponseDTO login(@RequestBody LoginRequestDTO request){
+        return authService.login(request);
     }
 }
