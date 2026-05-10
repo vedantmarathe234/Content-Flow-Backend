@@ -1,4 +1,4 @@
-package com.athenura.contentflow.enums;
+package com.athenura.contentflow.commons.enums;
 
 public enum Role {
     ADMIN,
