@@ -7,6 +7,7 @@ import com.athenura.contentflow.auth.security.JwtUtil;
 import com.athenura.contentflow.commons.enums.Role;
 import com.athenura.contentflow.department.entity.Department;
 import com.athenura.contentflow.department.repository.DepartmentRepository;
+import com.athenura.contentflow.user.dto.UserResponseDTO;
 import com.athenura.contentflow.user.entity.User;
 import com.athenura.contentflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,6 @@ public class AuthService {
     private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-
     @Value("${app.security.admin-master-key:ADMIN@athenura123}")
     private String masterAdminKey;
 
@@ -77,5 +77,28 @@ public class AuthService {
                 .role(user.getRole().name())
                 .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : "All Access")
                 .build();
+    }
+
+    public UserResponseDTO getUserProfile(String token) {
+
+        String jwt = token.substring(7);
+        String email = jwtUtil.extractEmail(jwt);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found!"));
+
+        UserResponseDTO response = new UserResponseDTO();
+        response.setId(user.getId());
+        response.setName(user.getName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole().name());
+
+
+        if (user.getDepartment() != null) {
+            response.setDepartmentName(user.getDepartment().getName());
+        }
+
+
+        return response;
     }
 }
