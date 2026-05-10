@@ -2,5 +2,5 @@ package com.athenura.contentflow.commons.enums;
 
 public enum Role {
     ADMIN,
-    DEPARTMENT_USER
+    INTERN
 }
