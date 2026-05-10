@@ -9,12 +9,13 @@ spring:
     url: jdbc:mysql://localhost:3306/contentflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: vedant123
+    password: Stavan@1996
 
   jpa:
     hibernate:
+      ddl-auto: update
 
-    ddl-auto: update
+
     show-sql: true
     properties:
       hibernate:
