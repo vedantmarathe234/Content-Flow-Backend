@@ -1,8 +1,6 @@
 package com.athenura.contentflow.auth.controller;
 
-import com.athenura.contentflow.auth.dto.AuthResponseDTO;
-import com.athenura.contentflow.auth.dto.LoginRequestDTO;
-import com.athenura.contentflow.auth.dto.RegistrationRequestDTO;
+import com.athenura.contentflow.auth.dto.*;
 import com.athenura.contentflow.auth.service.AuthService;
 import com.athenura.contentflow.user.dto.UserResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -30,5 +28,21 @@ public class AuthController {
     @GetMapping("/profile")
     public UserResponseDTO getCurrentUser(@RequestHeader("Authorization") String token) {
         return authService.getUserProfile(token);
+    }
+
+    @PostMapping("/forgot-password")
+    public String forgotPassword(
+            @RequestBody ForgotPasswordRequestDTO request
+    ) {
+
+        return authService.forgotPassword(request);
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(
+            @RequestBody ResetPasswordRequestDTO request
+    ) {
+
+        return authService.resetPassword(request);
     }
 }

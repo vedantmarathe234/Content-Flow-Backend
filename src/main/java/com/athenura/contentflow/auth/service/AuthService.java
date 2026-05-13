@@ -1,8 +1,6 @@
 package com.athenura.contentflow.auth.service;
 
-import com.athenura.contentflow.auth.dto.AuthResponseDTO;
-import com.athenura.contentflow.auth.dto.LoginRequestDTO;
-import com.athenura.contentflow.auth.dto.RegistrationRequestDTO;
+import com.athenura.contentflow.auth.dto.*;
 import com.athenura.contentflow.auth.security.JwtUtil;
 import com.athenura.contentflow.commons.enums.Role;
 import com.athenura.contentflow.department.entity.Department;
@@ -14,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -100,5 +100,38 @@ public class AuthService {
 
 
         return response;
+    }
+
+
+    public String forgotPassword(ForgotPasswordRequestDTO request){
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(()-> new RuntimeException("User not found!"));
+        String token = UUID.randomUUID().toString();
+
+        user.setResetToken(token);
+        userRepository.save(user);
+
+        return "Reset Token: " + token;
+
+    }
+
+    public String resetPassword(ResetPasswordRequestDTO request){
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(()-> new RuntimeException("User not found!"));
+
+        if(!request.getResetToken().equals(user.getResetToken())){
+            throw new RuntimeException("Invalid resey token!");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        user.setResetToken(null);
+
+        userRepository.save(user);
+
+        return "Password reset successful";
+
     }
 }
