@@ -23,6 +23,11 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
     open-in-view: false
 
+cloudinary:
+  cloud_name: dwfqsavsx
+  api_key: 911959791416542
+  api_secret: IbfJ3lzDkXhYonTIAqxAe51tvQ8
+
 app:
   security:
     admin-master-key: "ADMIN@athenura123"

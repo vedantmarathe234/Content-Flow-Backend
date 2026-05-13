@@ -7,9 +7,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.*;
 import lombok.*;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "departments")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
 
 public class Department {
     @Id

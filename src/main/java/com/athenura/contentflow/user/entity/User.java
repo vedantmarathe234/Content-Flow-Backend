@@ -4,10 +4,14 @@ import com.athenura.contentflow.commons.enums.Role;
 import com.athenura.contentflow.department.entity.Department;
 import jakarta.persistence.*;
 import lombok.*;
-
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "users")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,4 +30,5 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department;
+
 }

@@ -3,10 +3,9 @@ package com.athenura.contentflow.auth.dto;
 
 import lombok.*;
 
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class AuthResponseDTO {
     private String token;

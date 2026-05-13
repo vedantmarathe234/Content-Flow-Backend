@@ -2,10 +2,7 @@ package com.athenura.contentflow.auth.dto;
 
 import lombok.*;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 public class RegistrationRequestDTO {
     private String name;
     private String email;

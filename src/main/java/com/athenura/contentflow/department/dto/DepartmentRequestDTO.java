@@ -5,4 +5,5 @@ import lombok.Data;
 public class DepartmentRequestDTO {
     private String name;
     private String secretKey;
+
 }
