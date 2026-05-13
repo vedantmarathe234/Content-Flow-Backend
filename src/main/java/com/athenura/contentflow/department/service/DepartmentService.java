@@ -1,0 +1,33 @@
+package com.athenura.contentflow.department.service;
+
+import com.athenura.contentflow.department.entity.Department;
+import com.athenura.contentflow.department.repository.DepartmentRepository;
+import com.athenura.contentflow.department.dto.DepartmentRequestDTO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class DepartmentService {
+
+    private final DepartmentRepository departmentRepository;
+
+    public Department createDepartment(DepartmentRequestDTO dto) {
+
+        if(departmentRepository.findByName(dto.getName()).isPresent()) {
+            throw new RuntimeException("Department already exists!");
+        }
+
+        Department dept = Department.builder()
+                .name(dto.getName())
+                .secretKey(dto.getSecretKey())
+                .build();
+
+        return departmentRepository.save(dept);
+    }
+
+    public List<Department> getAllDepartments() {
+        return departmentRepository.findAll();
+    }
+}

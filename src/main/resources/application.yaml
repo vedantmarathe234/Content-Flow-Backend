@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: contentflow
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/contentflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+
+app:
+  security:
+    admin-master-key: "ADMIN@athenura123"
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+
+brevo:
+  api:
+    key: ${BREVO_API_KEY}
+
+  sender:
+    email: bhumikabhilkar@gmail.com
+    name: Bhumika
