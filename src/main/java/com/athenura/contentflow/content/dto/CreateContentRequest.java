@@ -8,6 +8,7 @@ public class CreateContentRequest {
     private String title;
     private String description;
     private String mediaUrl;
+    private String googleDriveLink;
     private String uploadProvider;
     private LocalDate scheduledDate;
 }

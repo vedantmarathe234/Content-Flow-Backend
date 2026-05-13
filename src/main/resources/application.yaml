@@ -39,7 +39,7 @@ logging:
 
 brevo:
   api:
-    key: ${BREVO_API_KEY}
+    key: xsmtpsib-21b4bab827abcc926c602463d51289a6af32a8ce88d194e3751dba4b59bb8460-yKzNdtbZ3hyKA6il
 
   sender:
     email: bhumikabhilkar@gmail.com

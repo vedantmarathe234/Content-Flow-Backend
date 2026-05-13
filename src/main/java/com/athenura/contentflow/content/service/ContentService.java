@@ -24,7 +24,6 @@ public class ContentService {
     private final ContentRepository contentRepository;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
-    private final GoogleDriveService googleDriveService;
 
     @Transactional
     public ContentResponse createContent(CreateContentRequest request, MultipartFile file, String email) {
@@ -32,9 +31,17 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
         String fileUrl;
+
+
         if ("DRIVE".equalsIgnoreCase(request.getUploadProvider())) {
-            fileUrl = googleDriveService.uploadFile(file);
+            if (request.getGoogleDriveLink() == null || request.getGoogleDriveLink().isEmpty()) {
+                throw new RuntimeException("Google Drive link is required when DRIVE is selected");
+            }
+            fileUrl = request.getGoogleDriveLink();
         } else {
+            if (file == null || file.isEmpty()) {
+                throw new RuntimeException("File is required for Cloudinary upload");
+            }
             fileUrl = cloudinaryService.uploadFile(file);
         }
 
@@ -64,8 +71,6 @@ public class ContentService {
                 .collect(Collectors.toList());
     }
 
-
-
     public List<ContentResponse> getContentByStatus(ContentStatus status) {
         return contentRepository.findByStatus(status).stream()
                 .map(this::mapToResponse)
@@ -78,8 +83,6 @@ public class ContentService {
                 .collect(Collectors.toList());
     }
 
-
-
     @Transactional
     public ContentResponse updateAndResubmit(Long id, CreateContentRequest request, MultipartFile file) {
         Content content = contentRepository.findById(id)
@@ -89,18 +92,19 @@ public class ContentService {
             throw new RuntimeException("Cannot edit content that is already APPROVED");
         }
 
-        if (file != null && !file.isEmpty()) {
-            try {
 
+        if ("DRIVE".equalsIgnoreCase(request.getUploadProvider())) {
+            if (request.getGoogleDriveLink() != null && !request.getGoogleDriveLink().isEmpty()) {
+                content.setMediaUrl(request.getGoogleDriveLink());
+            }
+        } else if (file != null && !file.isEmpty()) {
+            try {
                 if (content.getPublicId() != null) {
                     cloudinaryService.deleteFile(content.getPublicId());
                 }
-
                 Map uploadResult = cloudinaryService.uploadFileWithDetails(file);
-
                 content.setMediaUrl(uploadResult.get("url").toString());
                 content.setPublicId(uploadResult.get("public_id").toString());
-
             } catch (Exception e) {
                 throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
             }
@@ -112,12 +116,14 @@ public class ContentService {
         if (request.getDescription() != null) {
             content.setDescription(request.getDescription());
         }
+
         content.setStatus(ContentStatus.PENDING);
         content.setRejectionReason(null);
         content.setActionDate(null);
         Content savedContent = contentRepository.save(content);
         return mapToResponse(savedContent);
     }
+
     @Transactional
     public ApiResponse deleteContent(Long id, String email) {
         Content content = contentRepository.findById(id)

@@ -23,7 +23,7 @@ public class ContentController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ContentResponse> createContent(
             @RequestPart("data") CreateContentRequest request,
-            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             Principal principal) {
         return ResponseEntity.ok(contentService.createContent(request, file, principal.getName()));
     }
