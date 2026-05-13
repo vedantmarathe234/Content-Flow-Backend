@@ -36,3 +36,11 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
+
+brevo:
+  api:
+    key: ${BREVO_API_KEY}
+
+  sender:
+    email: bhumikabhilkar@gmail.com
+    name: Bhumika
