@@ -29,7 +29,6 @@ public class DepartmentService {
     }
 
     public List<Department> getAllDepartments(String email) {
-
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
