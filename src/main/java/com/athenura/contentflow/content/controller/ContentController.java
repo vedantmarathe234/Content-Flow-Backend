@@ -64,14 +64,34 @@ public class ContentController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/approve")
-    public ResponseEntity<ApiResponse> approveContent(@PathVariable Long id) {
-        return ResponseEntity.ok(contentService.approveContent(id));
+    public ResponseEntity<ApiResponse> approveContent(
+            @PathVariable Long id,
+            Principal principal
+    ) {
+
+        return ResponseEntity.ok(
+                contentService.approveContent(
+                        id,
+                        principal.getName()
+                )
+        );
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/reject")
-    public ResponseEntity<ApiResponse> rejectContent(@PathVariable Long id, @RequestBody RejectContentRequest request) {
-        return ResponseEntity.ok(contentService.rejectContent(id, request));
+    public ResponseEntity<ApiResponse> rejectContent(
+            @PathVariable Long id,
+            @RequestBody RejectContentRequest request,
+            Principal principal
+    ) {
+
+        return ResponseEntity.ok(
+                contentService.rejectContent(
+                        id,
+                        request,
+                        principal.getName()
+                )
+        );
     }
 
 
