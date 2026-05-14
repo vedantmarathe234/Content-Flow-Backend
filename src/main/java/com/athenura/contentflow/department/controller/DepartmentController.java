@@ -15,6 +15,7 @@ import java.util.List;
 public class DepartmentController {
 
     private final DepartmentService departmentService;
+
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
     public Department create(@RequestBody DepartmentRequestDTO dto) {
@@ -22,7 +23,7 @@ public class DepartmentController {
     }
 
     @GetMapping("/all")
-    public List<Department> getAll() {
-        return departmentService.getAllDepartments();
+    public List<Department> getAll(java.security.Principal principal) {
+        return departmentService.getAllDepartments(principal.getName());
     }
 }
