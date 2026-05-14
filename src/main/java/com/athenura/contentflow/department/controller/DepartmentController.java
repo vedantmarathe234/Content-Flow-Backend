@@ -4,6 +4,7 @@ import com.athenura.contentflow.department.entity.Department;
 import com.athenura.contentflow.department.service.DepartmentService;
 import com.athenura.contentflow.department.dto.DepartmentRequestDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.List;
 public class DepartmentController {
 
     private final DepartmentService departmentService;
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
     public Department create(@RequestBody DepartmentRequestDTO dto) {
         return departmentService.createDepartment(dto);

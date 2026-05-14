@@ -6,6 +6,7 @@ import com.athenura.contentflow.content.service.ContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -61,13 +62,13 @@ public class ContentController {
         return ResponseEntity.ok(contentService.deleteContent(id, principal.getName()));
     }
 
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/approve")
     public ResponseEntity<ApiResponse> approveContent(@PathVariable Long id) {
         return ResponseEntity.ok(contentService.approveContent(id));
     }
 
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/reject")
     public ResponseEntity<ApiResponse> rejectContent(@PathVariable Long id, @RequestBody RejectContentRequest request) {
         return ResponseEntity.ok(contentService.rejectContent(id, request));
