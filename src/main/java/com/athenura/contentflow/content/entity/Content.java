@@ -40,7 +40,13 @@ public class Content {
     private LocalDateTime actionDate;
 
     @ManyToOne
-    @JoinColumn(name = "created_by")
+    @JoinColumn(
+            name = "created_by",
+            foreignKey = @ForeignKey(
+                    foreignKeyDefinition =
+                            "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL"
+            )
+    )
     private User createdBy;
 
     @ManyToOne

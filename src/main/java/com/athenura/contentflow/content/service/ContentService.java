@@ -4,6 +4,9 @@ import com.athenura.contentflow.content.dto.*;
 import com.athenura.contentflow.commons.enums.ContentStatus;
 import com.athenura.contentflow.content.entity.Content;
 import com.athenura.contentflow.content.repository.ContentRepository;
+import com.athenura.contentflow.email.dto.EmailRequest;
+import com.athenura.contentflow.email.service.EmailService;
+import com.athenura.contentflow.email.dto.EmailRequest;
 import com.athenura.contentflow.exception.ResourceNotFoundException;
 import com.athenura.contentflow.exception.UnauthorizedException;
 import com.athenura.contentflow.user.entity.User;
@@ -24,6 +27,7 @@ public class ContentService {
     private final ContentRepository contentRepository;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final EmailService emailService;
 
     @Transactional
     public ContentResponse createContent(CreateContentRequest request, MultipartFile file, String email) {
@@ -126,37 +130,106 @@ public class ContentService {
 
     @Transactional
     public ApiResponse deleteContent(Long id, String email) {
-        Content content = contentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
 
-        if (!content.getCreatedBy().getEmail().equals(email)) {
-            throw new UnauthorizedException("You are not authorized to delete this content");
+        Content content = contentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Content not found"));
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (
+                !content.getCreatedBy().getEmail().equals(email)
+                        && !currentUser.getRole().name().equals("ADMIN")
+        ) {
+
+            throw new UnauthorizedException(
+                    "You are not authorized to delete this content"
+            );
         }
+
         contentRepository.delete(content);
+
         return new ApiResponse("Content deleted successfully");
     }
 
     @Transactional
-    public ApiResponse approveContent(Long id) {
+    public ApiResponse approveContent(Long id, String email) {
         Content content = contentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (!currentUser.getRole().name().equals("ADMIN")) {
+
+            throw new UnauthorizedException(
+                    "Only admins can approve content"
+            );
+        }
 
         content.setStatus(ContentStatus.APPROVED);
         content.setActionDate(LocalDateTime.now());
         contentRepository.save(content);
 
+        System.out.println(
+                "Approving content created by: " +
+                        content.getCreatedBy().getEmail()
+        );
+
+        EmailRequest emailRequest = EmailRequest.builder()
+                .to(content.getCreatedBy().getEmail())
+                .subject("Content Approved Successfully")
+                .body(
+                        "<h2>Your content has been approved</h2>" +
+                                "<p><b>Title:</b> " + content.getTitle() + "</p>" +
+                                "<p><b>Department:</b> " +
+                                content.getDepartment().getName() + "</p>" +
+                                "<p><b>Status:</b> APPROVED</p>"
+                )
+                .build();
+
+        emailService.sendEmail(emailRequest);
+
         return new ApiResponse("Content approved successfully");
     }
 
     @Transactional
-    public ApiResponse rejectContent(Long id, RejectContentRequest request) {
+    public ApiResponse rejectContent(Long id, RejectContentRequest request,String email) {
         Content content = contentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (!currentUser.getRole().name().equals("ADMIN")) {
+
+            throw new UnauthorizedException(
+                    "Only admins can reject content"
+            );
+        }
 
         content.setStatus(ContentStatus.REJECTED);
         content.setRejectionReason(request.getReason());
         content.setActionDate(LocalDateTime.now());
         contentRepository.save(content);
+
+        EmailRequest emailRequest = EmailRequest.builder()
+                .to(content.getCreatedBy().getEmail())
+                .subject("Content Rejected")
+                .body(
+                        "<h2>Your content was rejected</h2>" +
+                                "<p><b>Title:</b> " + content.getTitle() + "</p>" +
+                                "<p><b>Status:</b> REJECTED</p>" +
+                                "<p><b>Reason:</b> " +
+                                request.getReason() + "</p>"
+                )
+                .build();
+
+        emailService.sendEmail(emailRequest);
 
         return new ApiResponse("Content rejected successfully");
     }
