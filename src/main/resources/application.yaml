@@ -39,7 +39,7 @@ logging:
 
 brevo:
   api:
-    key: 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
+    key: ${BREVO_API_KEY}
 
   sender:
     email: marathevedant@gmail.com
