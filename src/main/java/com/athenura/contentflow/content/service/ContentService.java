@@ -6,7 +6,6 @@ import com.athenura.contentflow.content.entity.Content;
 import com.athenura.contentflow.content.repository.ContentRepository;
 import com.athenura.contentflow.email.dto.EmailRequest;
 import com.athenura.contentflow.email.service.EmailService;
-import com.athenura.contentflow.email.dto.EmailRequest;
 import com.athenura.contentflow.exception.ResourceNotFoundException;
 import com.athenura.contentflow.exception.UnauthorizedException;
 import com.athenura.contentflow.user.entity.User;
@@ -28,6 +27,7 @@ public class ContentService {
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
     private final EmailService emailService;
+    private final com.athenura.contentflow.team.repository.TeamRepository teamRepository;
 
     @Transactional
     public ContentResponse createContent(CreateContentRequest request, MultipartFile file, String email) {
@@ -35,7 +35,6 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
         String fileUrl;
-
 
         if ("DRIVE".equalsIgnoreCase(request.getUploadProvider())) {
             if (request.getGoogleDriveLink() == null || request.getGoogleDriveLink().isEmpty()) {
@@ -58,6 +57,18 @@ public class ContentService {
 
         content.setCreatedBy(user);
         content.setDepartment(user.getDepartment());
+
+
+        if (request.getTeamId() != null) {
+            com.athenura.contentflow.team.entity.Team team = teamRepository.findById(request.getTeamId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + request.getTeamId()));
+            content.setTeam(team);
+            content.setStatus(ContentStatus.PENDING_LEADER);
+        } else {
+            content.setTeam(null);
+            content.setStatus(ContentStatus.PENDING);
+        }
+
 
         Content savedContent = contentRepository.save(content);
         return mapToResponse(savedContent);
@@ -96,7 +107,6 @@ public class ContentService {
             throw new RuntimeException("Cannot edit content that is already APPROVED");
         }
 
-
         if ("DRIVE".equalsIgnoreCase(request.getUploadProvider())) {
             if (request.getGoogleDriveLink() != null && !request.getGoogleDriveLink().isEmpty()) {
                 content.setMediaUrl(request.getGoogleDriveLink());
@@ -130,27 +140,17 @@ public class ContentService {
 
     @Transactional
     public ApiResponse deleteContent(Long id, String email) {
-
         Content content = contentRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Content not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (
-                !content.getCreatedBy().getEmail().equals(email)
-                        && !currentUser.getRole().name().equals("ADMIN")
-        ) {
-
-            throw new UnauthorizedException(
-                    "You are not authorized to delete this content"
-            );
+        if (!content.getCreatedBy().getEmail().equals(email) && !currentUser.getRole().name().equals("ADMIN")) {
+            throw new UnauthorizedException("You are not authorized to delete this content");
         }
 
         contentRepository.delete(content);
-
         return new ApiResponse("Content deleted successfully");
     }
 
@@ -160,24 +160,15 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!currentUser.getRole().name().equals("ADMIN")) {
-
-            throw new UnauthorizedException(
-                    "Only admins can approve content"
-            );
+            throw new UnauthorizedException("Only admins can approve content");
         }
 
         content.setStatus(ContentStatus.APPROVED);
         content.setActionDate(LocalDateTime.now());
         contentRepository.save(content);
-
-        System.out.println(
-                "Approving content created by: " +
-                        content.getCreatedBy().getEmail()
-        );
 
         EmailRequest emailRequest = EmailRequest.builder()
                 .to(content.getCreatedBy().getEmail())
@@ -185,31 +176,25 @@ public class ContentService {
                 .body(
                         "<h2>Your content has been approved</h2>" +
                                 "<p><b>Title:</b> " + content.getTitle() + "</p>" +
-                                "<p><b>Department:</b> " +
-                                content.getDepartment().getName() + "</p>" +
+                                "<p><b>Department:</b> " + content.getDepartment().getName() + "</p>" +
                                 "<p><b>Status:</b> APPROVED</p>"
                 )
                 .build();
 
         emailService.sendEmail(emailRequest);
-
         return new ApiResponse("Content approved successfully");
     }
 
     @Transactional
-    public ApiResponse rejectContent(Long id, RejectContentRequest request,String email) {
+    public ApiResponse rejectContent(Long id, RejectContentRequest request, String email) {
         Content content = contentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!currentUser.getRole().name().equals("ADMIN")) {
-
-            throw new UnauthorizedException(
-                    "Only admins can reject content"
-            );
+            throw new UnauthorizedException("Only admins can reject content");
         }
 
         content.setStatus(ContentStatus.REJECTED);
@@ -224,14 +209,28 @@ public class ContentService {
                         "<h2>Your content was rejected</h2>" +
                                 "<p><b>Title:</b> " + content.getTitle() + "</p>" +
                                 "<p><b>Status:</b> REJECTED</p>" +
-                                "<p><b>Reason:</b> " +
-                                request.getReason() + "</p>"
+                                "<p><b>Reason:</b> " + request.getReason() + "</p>"
                 )
                 .build();
 
         emailService.sendEmail(emailRequest);
-
         return new ApiResponse("Content rejected successfully");
+    }
+
+
+    @Transactional
+    public ApiResponse approveContentByLeader(Long id, String email) {
+        Content content = contentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
+
+        if (content.getStatus().equals(ContentStatus.PENDING_LEADER)) {
+            content.setStatus(ContentStatus.PENDING);
+            content.setActionDate(LocalDateTime.now());
+            contentRepository.save(content);
+            return new ApiResponse("Content approved by leader and forwarded to Admin successfully");
+        } else {
+            throw new RuntimeException("This content is not pending for leader approval");
+        }
     }
 
     public ContentResponse getContentById(Long id) {
@@ -256,6 +255,30 @@ public class ContentService {
         response.setCreatedAt(content.getCreatedAt());
         response.setScheduledDate(content.getScheduledDate());
         response.setActionDate(content.getActionDate());
+
+
+        if (content.getStatus() == ContentStatus.PENDING_LEADER) {
+            response.setCurrentStage("Pending with Team Leader");
+            response.setApprovedByLeader("Not approved yet by Leader");
+        } else if (content.getStatus() == ContentStatus.PENDING) {
+            response.setCurrentStage("Pending with Admin");
+            if (content.getTeam() != null && content.getTeam().getTeamLeader() != null) {
+                response.setApprovedByLeader("Approved by: " + content.getTeam().getTeamLeader().getName());
+            } else {
+                response.setApprovedByLeader("");
+            }
+        } else if (content.getStatus() == ContentStatus.APPROVED) {
+            response.setCurrentStage("Final Approved by Admin ");
+            if (content.getTeam() != null && content.getTeam().getTeamLeader() != null) {
+                response.setApprovedByLeader("Approved by: " + content.getTeam().getTeamLeader().getName());
+            } else {
+                response.setApprovedByLeader("");
+            }
+        } else if (content.getStatus() == ContentStatus.REJECTED) {
+            response.setCurrentStage("Rejected");
+            response.setApprovedByLeader("Rejected - Check reason");
+        }
+
         return response;
     }
 }
