@@ -11,4 +11,5 @@ public class CreateContentRequest {
     private String googleDriveLink;
     private String uploadProvider;
     private LocalDate scheduledDate;
+    private Long teamId;
 }

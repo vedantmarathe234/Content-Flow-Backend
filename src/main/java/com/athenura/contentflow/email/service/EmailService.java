@@ -1,6 +1,9 @@
 package com.athenura.contentflow.email.service;
 
 import com.athenura.contentflow.email.dto.EmailRequest;
+import com.athenura.contentflow.commons.enums.Role;
+import com.athenura.contentflow.user.entity.User;
+import com.athenura.contentflow.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import okhttp3.MediaType;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class EmailService {
@@ -29,6 +33,8 @@ public class EmailService {
 
     private final ObjectMapper objectMapper;
 
+    private final UserRepository userRepository;
+
     @Value("${brevo.api.key}")
     private String brevoApiKey;
 
@@ -38,13 +44,15 @@ public class EmailService {
     @Value("${brevo.sender.name}")
     private String senderName;
 
+
     public EmailService(
             OkHttpClient okHttpClient,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            UserRepository userRepository
     ) {
-
         this.okHttpClient = okHttpClient;
         this.objectMapper = objectMapper;
+        this.userRepository = userRepository;
     }
 
     public String sendEmail(
@@ -54,6 +62,20 @@ public class EmailService {
         validateEmailRequest(emailRequest);
 
         try {
+
+            String targetEmail = emailRequest.getTo();
+            Optional<User> userOptional = userRepository.findByEmail(targetEmail);
+
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+
+                if (user.getRole() == Role.INTERN && user.getTeam() != null && user.getTeam().getTeamLeader() != null) {
+
+                    targetEmail = user.getTeam().getTeamLeader().getEmail();
+                    emailRequest.setTo(targetEmail);
+                }
+            }
+
 
             String requestBodyJson =
                     buildRequestBody(emailRequest);

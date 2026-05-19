@@ -9,7 +9,7 @@ spring:
     url: jdbc:mysql://localhost:3306/contentflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: ${DB_PASSWORD}
+    password: vedant123
 
   jpa:
     hibernate:
@@ -39,8 +39,8 @@ logging:
 
 brevo:
   api:
-    key: ${BREVO_API_KEY}
+    key: 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
 
   sender:
-    email: dalalstavan7@gmail.com
-    name: Stavan
+    email: marathevedant@gmail.com
+    name: vedant

@@ -19,4 +19,6 @@ public class ContentResponse {
     private LocalDateTime createdAt;
     private LocalDate scheduledDate;
     private LocalDateTime actionDate;
+    private String currentStage;
+    private String approvedByLeader;
 }

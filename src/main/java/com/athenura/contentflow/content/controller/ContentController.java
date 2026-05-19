@@ -105,4 +105,13 @@ public class ContentController {
     public ResponseEntity<List<ContentResponse>> getByDepartment(@PathVariable Long deptId) {
         return ResponseEntity.ok(contentService.getContentByDepartment(deptId));
     }
+
+    @PreAuthorize("hasRole('TEAM_LEADER')")
+    @PutMapping("/{id}/leader-approve")
+    public ResponseEntity<ApiResponse> approveContentByLeader(
+            @PathVariable Long id,
+            Principal principal
+    ) {
+        return ResponseEntity.ok(contentService.approveContentByLeader(id, principal.getName()));
+    }
 }

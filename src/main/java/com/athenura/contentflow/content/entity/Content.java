@@ -26,7 +26,9 @@ public class Content {
 
     private String uploadProvider;
 
+
     @Enumerated(EnumType.STRING)
+    @Column(name = "content_status", length = 50)
     private ContentStatus status;
 
     private String rejectionReason;
@@ -39,25 +41,27 @@ public class Content {
 
     private LocalDateTime actionDate;
 
+
     @ManyToOne
-    @JoinColumn(
-            name = "created_by",
-            foreignKey = @ForeignKey(
-                    foreignKeyDefinition =
-                            "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL"
-            )
-    )
+    @JoinColumn(name = "created_by")
     private User createdBy;
 
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department;
 
+    @ManyToOne
+    @JoinColumn(name = "team_id", nullable = true)
+    private com.athenura.contentflow.team.entity.Team team;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.status = ContentStatus.PENDING;
+
+        if (this.status == null) {
+            this.status = ContentStatus.PENDING;
+        }
     }
 
     @PreUpdate
@@ -67,7 +71,6 @@ public class Content {
 
     @Column(name = "public_id")
     private String publicId;
-
 
     public String getPublicId() {
         return publicId;
