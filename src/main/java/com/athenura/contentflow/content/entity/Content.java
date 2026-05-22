@@ -41,6 +41,8 @@ public class Content {
 
     private LocalDateTime actionDate;
 
+    private Boolean reminderSent = false;
+
 
     @ManyToOne
     @JoinColumn(name = "created_by")

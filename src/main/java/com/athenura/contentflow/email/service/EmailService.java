@@ -189,7 +189,8 @@ public class EmailService {
             if (!response.isSuccessful()) {
 
                 throw new RuntimeException(
-                        "Brevo API request failed"
+                        "Brevo API request failed: "
+                                + response.body().string()
                 );
             }
 
