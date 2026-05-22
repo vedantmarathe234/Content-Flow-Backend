@@ -220,17 +220,56 @@ public class ContentService {
 
     @Transactional
     public ApiResponse approveContentByLeader(Long id, String email) {
-        Content content = contentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Content not found"));
 
-        if (content.getStatus().equals(ContentStatus.PENDING_LEADER)) {
-            content.setStatus(ContentStatus.PENDING);
-            content.setActionDate(LocalDateTime.now());
-            contentRepository.save(content);
-            return new ApiResponse("Content approved by leader and forwarded to Admin successfully");
-        } else {
-            throw new RuntimeException("This content is not pending for leader approval");
+        Content content = contentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Content not found"));
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (!currentUser.getRole().name().equals("TEAM_LEADER")) {
+
+            throw new UnauthorizedException(
+                    "Only Team Leaders can approve content"
+            );
         }
+
+        if (content.getTeam() == null
+                || content.getTeam().getTeamLeader() == null) {
+
+            throw new RuntimeException(
+                    "This content has no assigned team leader"
+            );
+        }
+
+        if (content.getTeam()
+                .getTeamLeader()
+                .getId() != currentUser.getId()) {
+
+            throw new UnauthorizedException(
+                    "You are not leader of this team"
+            );
+        }
+
+        if (!content.getStatus()
+                .equals(ContentStatus.PENDING_LEADER)) {
+
+            throw new RuntimeException(
+                    "This content is not pending for leader approval"
+            );
+        }
+
+        content.setStatus(ContentStatus.PENDING);
+
+        content.setActionDate(LocalDateTime.now());
+
+        contentRepository.save(content);
+
+        return new ApiResponse(
+                "Content approved by leader and forwarded to Admin successfully"
+        );
     }
 
     public ContentResponse getContentById(Long id) {
