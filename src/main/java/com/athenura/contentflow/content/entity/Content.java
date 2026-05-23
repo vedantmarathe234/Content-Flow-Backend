@@ -2,6 +2,7 @@ package com.athenura.contentflow.content.entity;
 
 import com.athenura.contentflow.commons.enums.ContentStatus;
 import com.athenura.contentflow.department.entity.Department;
+import com.athenura.contentflow.team.entity.Team;
 import com.athenura.contentflow.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -45,7 +46,14 @@ public class Content {
 
 
     @ManyToOne
-    @JoinColumn(name = "created_by")
+    @JoinColumn(
+            name = "created_by",
+            nullable = true,
+            foreignKey = @ForeignKey(
+                    foreignKeyDefinition =
+                            "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL"
+            )
+    )
     private User createdBy;
 
     @ManyToOne
@@ -53,8 +61,15 @@ public class Content {
     private Department department;
 
     @ManyToOne
-    @JoinColumn(name = "team_id", nullable = true)
-    private com.athenura.contentflow.team.entity.Team team;
+    @JoinColumn(
+            name = "team_id",
+            nullable = true,
+            foreignKey = @ForeignKey(
+                    foreignKeyDefinition =
+                            "FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL"
+            )
+    )
+    private Team team;
 
     @PrePersist
     public void prePersist() {
