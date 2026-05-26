@@ -5,6 +5,8 @@ import com.athenura.contentflow.auth.security.JwtUtil;
 import com.athenura.contentflow.commons.enums.Role;
 import com.athenura.contentflow.department.entity.Department;
 import com.athenura.contentflow.department.repository.DepartmentRepository;
+import com.athenura.contentflow.email.dto.EmailRequest;
+import com.athenura.contentflow.email.service.EmailService;
 import com.athenura.contentflow.user.dto.UserResponseDTO;
 import com.athenura.contentflow.user.entity.User;
 import com.athenura.contentflow.user.repository.UserRepository;
@@ -25,6 +27,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     @Value("${app.security.admin-master-key:ADMIN@athenura123}")
     private String masterAdminKey;
+    private final EmailService emailService;
 
     public String register(RegistrationRequestDTO dto) {
         User user = new User();
@@ -103,35 +106,74 @@ public class AuthService {
     }
 
 
-    public String forgotPassword(ForgotPasswordRequestDTO request){
+    public String forgotPassword(
+            ForgotPasswordRequestDTO request
+    ) {
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(()-> new RuntimeException("User not found!"));
-        String token = UUID.randomUUID().toString();
+        User user = userRepository
+                .findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found!"
+                        ));
+
+        String token =
+                UUID.randomUUID().toString();
 
         user.setResetToken(token);
+
         userRepository.save(user);
 
-        return "Reset Token: " + token;
+        String resetLink =
+                "http://localhost:5173/reset-password?token="
+                        + token;
 
+        EmailRequest emailRequest =
+                new EmailRequest();
+
+        emailRequest.setTo(user.getEmail());
+
+        emailRequest.setSubject(
+                "Reset Your Password"
+        );
+
+        emailRequest.setBody(
+                "<h2>Password Reset</h2>"
+                        + "<p>Click below link to reset your password:</p>"
+                        + "<a href='"
+                        + resetLink
+                        + "'>Reset Password</a>"
+        );
+
+        emailService.sendEmail(emailRequest);
+
+        return "Reset link sent to email";
     }
 
-    public String resetPassword(ResetPasswordRequestDTO request){
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(()-> new RuntimeException("User not found!"));
+    public String resetPassword(
+            ResetPasswordRequestDTO request
+    ) {
 
-        if(!request.getResetToken().equals(user.getResetToken())){
-            throw new RuntimeException("Invalid resey token!");
-        }
+        User user = userRepository
+                .findByResetToken(
+                        request.getResetToken()
+                )
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Invalid reset token!"
+                        ));
 
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPassword(
+                passwordEncoder.encode(
+                        request.getNewPassword()
+                )
+        );
 
         user.setResetToken(null);
 
         userRepository.save(user);
 
         return "Password reset successful";
-
     }
 }
