@@ -3,7 +3,7 @@ package com.athenura.contentflow.department.service;
 import com.athenura.contentflow.department.entity.Department;
 import com.athenura.contentflow.department.repository.DepartmentRepository;
 import com.athenura.contentflow.department.dto.DepartmentRequestDTO;
-import com.athenura.contentflow.user.repository.UserRepository; // योग्य इम्पोर्ट तपासा
+import com.athenura.contentflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -32,7 +32,6 @@ public class DepartmentService {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-
         if ("ADMIN".equals(user.getRole().name())) {
             return departmentRepository.findAll();
         }
@@ -42,5 +41,24 @@ public class DepartmentService {
         }
 
         return List.of();
+    }
+
+
+
+    public Department updateDepartment(Long id, DepartmentRequestDTO dto) {
+        Department dept = departmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Department not found!"));
+
+        dept.setName(dto.getName());
+        dept.setSecretKey(dto.getSecretKey());
+
+        return departmentRepository.save(dept);
+    }
+
+    public void deleteDepartment(Long id) {
+        if (!departmentRepository.existsById(id)) {
+            throw new RuntimeException("Department not found!");
+        }
+        departmentRepository.deleteById(id);
     }
 }

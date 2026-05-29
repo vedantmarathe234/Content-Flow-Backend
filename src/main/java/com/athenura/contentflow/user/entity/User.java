@@ -18,6 +18,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    @Column(name = "profile_photo_url")
+    private String profilePhotoUrl;
+
     private String name;
 
     @Column(unique = true, nullable = false)
