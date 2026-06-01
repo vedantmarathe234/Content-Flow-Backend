@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,6 @@ public class TeamService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
 
-
     public List<UserResponseDTO> getAvailableInternsByDepartment(Long departmentId) {
         return userRepository.findByDepartmentIdAndRole(departmentId, Role.INTERN).stream()
                 .map(user -> {
@@ -36,6 +36,7 @@ public class TeamService {
                     dto.setName(user.getName());
                     dto.setEmail(user.getEmail());
                     dto.setRole(user.getRole().name());
+                    dto.setTeamLeader(user.isTeamLeader());
                     if (user.getDepartment() != null) {
                         dto.setDepartmentName(user.getDepartment().getName());
                     }
@@ -43,7 +44,6 @@ public class TeamService {
                 })
                 .collect(Collectors.toList());
     }
-
 
     @Transactional
     public TeamResponse createTeam(CreateTeamRequest request) {
@@ -55,128 +55,97 @@ public class TeamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
 
         User leader = userRepository.findById(request.getTeamLeaderId())
-                .orElseThrow(() -> new ResourceNotFoundException("Selected Leader user not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Leader not found"));
+
+        if (leader.getDepartment() == null || !leader.getDepartment().getId().equals(department.getId())) {
+            throw new IllegalArgumentException("Leader must be from the same department!");
+        }
 
         Team team = new Team();
         team.setName(request.getName());
         team.setDepartment(department);
         team.setTeamLeader(leader);
-        Team savedTeam = teamRepository.save(team);
-
 
         if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
             List<User> members = userRepository.findAllById(request.getMemberIds());
             for (User member : members) {
-                member.setTeam(savedTeam);
+                if (member.getDepartment() == null || !member.getDepartment().getId().equals(department.getId())) {
+                    throw new IllegalArgumentException("Member " + member.getName() + " is not from the same department!");
+                }
             }
-            userRepository.saveAll(members);
-            savedTeam.setMembers(members);
+            team.setMembers(members);
         }
 
-
-        leader.setRole(Role.TEAM_LEADER);
-        leader.setTeam(savedTeam);
-        userRepository.save(leader);
-
-        return mapToResponse(savedTeam);
+        return mapToResponse(teamRepository.save(team));
     }
-
 
     @Transactional
     public TeamResponse updateTeam(Long teamId, UpdateTeamRequest request) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
 
-
-        if (team.getMembers() != null) {
-            for (User member : team.getMembers()) {
-                member.setTeam(null);
-            }
-            userRepository.saveAll(team.getMembers());
-        }
-
-
-        User oldLeader = team.getTeamLeader();
-        if (oldLeader != null) {
-            oldLeader.setRole(Role.INTERN);
-            oldLeader.setTeam(null);
-            userRepository.save(oldLeader);
-        }
-
-
         if (request.getName() != null) {
             team.setName(request.getName());
         }
 
-
         User newLeader = userRepository.findById(request.getTeamLeaderId())
                 .orElseThrow(() -> new ResourceNotFoundException("New Leader not found"));
-        newLeader.setRole(Role.TEAM_LEADER);
-        newLeader.setTeam(team);
-        userRepository.save(newLeader);
+
+        if (newLeader.getDepartment() == null || team.getDepartment() == null ||
+                !newLeader.getDepartment().getId().equals(team.getDepartment().getId())) {
+            throw new IllegalArgumentException("Leader must be from the same department!");
+        }
+
         team.setTeamLeader(newLeader);
 
-
-        if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
+        if (request.getMemberIds() != null) {
             List<User> newMembers = userRepository.findAllById(request.getMemberIds());
             for (User member : newMembers) {
-                member.setTeam(team);
+                if (member.getDepartment() == null || team.getDepartment() == null ||
+                        !member.getDepartment().getId().equals(team.getDepartment().getId())) {
+                    throw new IllegalArgumentException("Member " + member.getName() + " is not from the same department!");
+                }
             }
-            userRepository.saveAll(newMembers);
             team.setMembers(newMembers);
         }
 
-        Team updatedTeam = teamRepository.save(team);
-        return mapToResponse(updatedTeam);
+        return mapToResponse(teamRepository.save(team));
     }
-
 
     @Transactional
     public void deleteTeam(Long teamId) {
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
-
-        if (team.getMembers() != null) {
-            for (User member : team.getMembers()) {
-                member.setTeam(null);
-            }
-            userRepository.saveAll(team.getMembers());
+        if (!teamRepository.existsById(teamId)) {
+            throw new ResourceNotFoundException("Team not found");
         }
-
-        User leader = team.getTeamLeader();
-        if (leader != null) {
-            leader.setRole(Role.INTERN);
-            leader.setTeam(null);
-            userRepository.save(leader);
-        }
-
-        teamRepository.delete(team);
+        teamRepository.deleteById(teamId);
     }
 
-
+    @Transactional(readOnly = true)
     public List<TeamResponse> getAllTeams() {
-        return teamRepository.findAll().stream()
+        return teamRepository.findAllWithMembers().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-
     public TeamResponse getTeamByUserEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (user.getTeam() == null) {
-            throw new ResourceNotFoundException("You are not assigned to any team yet!");
+        List<Team> teams = teamRepository.findByMembersContaining(user);
+        if (teams == null || teams.isEmpty()) {
+            throw new ResourceNotFoundException("You are not assigned to any team!");
         }
-
-        return mapToResponse(user.getTeam());
+        return mapToResponse(teams.get(0));
     }
 
     private TeamResponse mapToResponse(Team team) {
         TeamResponse response = new TeamResponse();
         response.setId(team.getId());
         response.setName(team.getName());
-        response.setDepartmentName(team.getDepartment().getName());
+
+        if (team.getDepartment() != null) {
+            response.setDepartmentName(team.getDepartment().getName());
+        }
 
         if (team.getTeamLeader() != null) {
             response.setTeamLeaderId(team.getTeamLeader().getId());
@@ -184,10 +153,11 @@ public class TeamService {
         }
 
         if (team.getMembers() != null) {
-            List<String> memberNames = team.getMembers().stream()
+            response.setMemberNames(team.getMembers().stream()
                     .map(User::getName)
-                    .collect(Collectors.toList());
-            response.setMemberNames(memberNames);
+                    .collect(Collectors.toList()));
+        } else {
+            response.setMemberNames(new ArrayList<>());
         }
 
         return response;

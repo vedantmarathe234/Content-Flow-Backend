@@ -10,4 +10,6 @@ public class UserResponseDTO {
     private String role;
     private String departmentName;
     private String profilePhotoUrl;
-}
+    private boolean teamLeader;
+
+    }

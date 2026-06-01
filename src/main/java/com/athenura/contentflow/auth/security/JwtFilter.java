@@ -38,7 +38,7 @@ public class JwtFilter extends OncePerRequestFilter {
             try {
                 email = jwtUtil.extractEmail(token);
             } catch (Exception e) {
-
+                System.out.println("JWT Token Error: " + e.getMessage());
             }
         }
 

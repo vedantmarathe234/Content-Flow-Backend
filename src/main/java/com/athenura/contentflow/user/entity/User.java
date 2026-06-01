@@ -6,6 +6,9 @@ import com.athenura.contentflow.team.entity.Team;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,7 +19,7 @@ import lombok.*;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @Column(name = "profile_photo_url")
     private String profilePhotoUrl;
@@ -38,8 +41,16 @@ public class User {
 
     private String resetToken;
 
-    @ManyToOne
-    @JoinColumn(name = "team_id")
-    private Team team;
+    @OneToMany(mappedBy = "teamLeader")
+    private List<Team> teamsLed = new ArrayList<>();
 
+
+    @ManyToMany(mappedBy = "members")
+    private List<Team> teams = new ArrayList<>();
+
+    @Column(name = "is_team_leader")
+    private boolean isTeamLeader = false;
+
+    public boolean isTeamLeader() { return isTeamLeader; }
+    public void setTeamLeader(boolean isTeamLeader) { this.isTeamLeader = isTeamLeader; }
 }

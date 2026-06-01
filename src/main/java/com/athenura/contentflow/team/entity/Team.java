@@ -25,12 +25,19 @@ public class Team {
     private Department department;
 
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "leader_id")
     private User teamLeader;
 
-
-
-    @OneToMany(mappedBy = "team", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "team_members",
+            joinColumns = @JoinColumn(name = "team_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
     private List<User> members = new ArrayList<>();
+
+    public boolean isEmpty() {
+        return this.name == null || this.name.trim().isEmpty();
+    }
 }

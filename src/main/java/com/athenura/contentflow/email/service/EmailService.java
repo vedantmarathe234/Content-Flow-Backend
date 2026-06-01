@@ -2,6 +2,7 @@ package com.athenura.contentflow.email.service;
 
 import com.athenura.contentflow.email.dto.EmailRequest;
 import com.athenura.contentflow.commons.enums.Role;
+import com.athenura.contentflow.team.entity.Team;
 import com.athenura.contentflow.user.entity.User;
 import com.athenura.contentflow.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,16 +24,11 @@ import java.util.Optional;
 @Service
 public class EmailService {
 
-    private static final String BREVO_API_URL =
-            "https://api.brevo.com/v3/smtp/email";
-
-    private static final MediaType JSON =
-            MediaType.parse("application/json");
+    private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+    private static final MediaType JSON = MediaType.parse("application/json");
 
     private final OkHttpClient okHttpClient;
-
     private final ObjectMapper objectMapper;
-
     private final UserRepository userRepository;
 
     @Value("${brevo.api.key}")
@@ -44,7 +40,6 @@ public class EmailService {
     @Value("${brevo.sender.name}")
     private String senderName;
 
-
     public EmailService(
             OkHttpClient okHttpClient,
             ObjectMapper objectMapper,
@@ -55,153 +50,85 @@ public class EmailService {
         this.userRepository = userRepository;
     }
 
-    public String sendEmail(
-            EmailRequest emailRequest
-    ) {
-
+    public String sendEmail(EmailRequest emailRequest) {
         validateEmailRequest(emailRequest);
 
         try {
-
             String targetEmail = emailRequest.getTo();
             Optional<User> userOptional = userRepository.findByEmail(targetEmail);
 
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
 
-                if (user.getRole() == Role.INTERN && user.getTeam() != null && user.getTeam().getTeamLeader() != null) {
+                if (user.getRole() == Role.INTERN &&
+                        user.getTeams() != null &&
+                        !user.getTeams().isEmpty()) {
 
-                    targetEmail = user.getTeam().getTeamLeader().getEmail();
-                    emailRequest.setTo(targetEmail);
+                    Team firstTeam = user.getTeams().get(0);
+                    if (firstTeam.getTeamLeader() != null) {
+                        targetEmail = firstTeam.getTeamLeader().getEmail();
+                        emailRequest.setTo(targetEmail);
+                    }
                 }
             }
 
-
-            String requestBodyJson =
-                    buildRequestBody(emailRequest);
-
-            RequestBody requestBody =
-                    RequestBody.create(
-                            requestBodyJson,
-                            JSON
-                    );
-
-            Request request =
-                    buildRequest(requestBody);
+            String requestBodyJson = buildRequestBody(emailRequest);
+            RequestBody requestBody = RequestBody.create(requestBodyJson, JSON);
+            Request request = buildRequest(requestBody);
 
             return executeRequest(request);
 
         } catch (Exception exception) {
-
-            throw new RuntimeException(
-                    "Failed to send email",
-                    exception
-            );
+            throw new RuntimeException("Failed to send email", exception);
         }
     }
 
-    private void validateEmailRequest(
-            EmailRequest emailRequest
-    ) {
-
-        if (emailRequest.getTo() == null
-                || emailRequest.getTo().isBlank()) {
-
-            throw new IllegalArgumentException(
-                    "Receiver email is required"
-            );
+    private void validateEmailRequest(EmailRequest emailRequest) {
+        if (emailRequest.getTo() == null || emailRequest.getTo().isBlank()) {
+            throw new IllegalArgumentException("Receiver email is required");
         }
-
-        if (emailRequest.getSubject() == null
-                || emailRequest.getSubject().isBlank()) {
-
-            throw new IllegalArgumentException(
-                    "Subject is required"
-            );
+        if (emailRequest.getSubject() == null || emailRequest.getSubject().isBlank()) {
+            throw new IllegalArgumentException("Subject is required");
         }
-
-        if (emailRequest.getBody() == null
-                || emailRequest.getBody().isBlank()) {
-
-            throw new IllegalArgumentException(
-                    "Email body is required"
-            );
+        if (emailRequest.getBody() == null || emailRequest.getBody().isBlank()) {
+            throw new IllegalArgumentException("Email body is required");
         }
     }
 
-    private String buildRequestBody(
-            EmailRequest emailRequest
-    ) throws IOException {
-
+    private String buildRequestBody(EmailRequest emailRequest) throws IOException {
         Map<String, Object> payload = Map.of(
-
                 "sender", Map.of(
                         "name", senderName,
                         "email", senderEmail
                 ),
-
                 "to", List.of(
-                        Map.of(
-                                "email",
-                                emailRequest.getTo()
-                        )
+                        Map.of("email", emailRequest.getTo())
                 ),
-
-                "subject",
-                emailRequest.getSubject(),
-
-                "htmlContent",
-                emailRequest.getBody()
+                "subject", emailRequest.getSubject(),
+                "htmlContent", emailRequest.getBody()
         );
 
         return objectMapper.writeValueAsString(payload);
     }
 
-    private Request buildRequest(
-            RequestBody requestBody
-    ) {
-
+    private Request buildRequest(RequestBody requestBody) {
         return new Request.Builder()
                 .url(BREVO_API_URL)
                 .post(requestBody)
-                .addHeader(
-                        "accept",
-                        "application/json"
-                )
-                .addHeader(
-                        "api-key",
-                        brevoApiKey
-                )
-                .addHeader(
-                        "content-type",
-                        "application/json"
-                )
+                .addHeader("accept", "application/json")
+                .addHeader("api-key", brevoApiKey)
+                .addHeader("content-type", "application/json")
                 .build();
     }
 
-    private String executeRequest(
-            Request request
-    ) {
-
-        try (Response response =
-                     okHttpClient.newCall(request).execute()) {
-
+    private String executeRequest(Request request) {
+        try (Response response = okHttpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-
-                throw new RuntimeException(
-                        "Brevo API request failed: "
-                                + response.body().string()
-                );
+                throw new RuntimeException("Brevo API request failed: " + response.body().string());
             }
-
             return "Email sent successfully";
-
         } catch (IOException exception) {
-
-            throw new RuntimeException(
-                    "Error while sending email",
-                    exception
-            );
+            throw new RuntimeException("Error while sending email", exception);
         }
     }
 }
