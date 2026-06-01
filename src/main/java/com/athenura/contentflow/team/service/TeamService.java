@@ -144,6 +144,7 @@ public class TeamService {
         response.setName(team.getName());
 
         if (team.getDepartment() != null) {
+            response.setDepartmentId(team.getDepartment().getId());
             response.setDepartmentName(team.getDepartment().getName());
         }
 
@@ -156,8 +157,13 @@ public class TeamService {
             response.setMemberNames(team.getMembers().stream()
                     .map(User::getName)
                     .collect(Collectors.toList()));
+
+            response.setMemberIds(team.getMembers().stream()
+                    .map(User::getId)
+                    .collect(Collectors.toList()));
         } else {
             response.setMemberNames(new ArrayList<>());
+            response.setMemberIds(new ArrayList<>());
         }
 
         return response;

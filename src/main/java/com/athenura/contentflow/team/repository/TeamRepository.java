@@ -15,6 +15,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     List<Team> findByMembersContaining(User user);
 
+    List<Team> findByDepartmentId(Long departmentId);
 
     @Query("SELECT DISTINCT t FROM Team t LEFT JOIN FETCH t.members")
     List<Team> findAllWithMembers();

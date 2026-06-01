@@ -5,6 +5,7 @@ import java.util.List;
 @Data
 public class UpdateTeamRequest {
     private String name;
+    private Long departmentId;
     private Long teamLeaderId;
     private List<Long> memberIds;
 }
