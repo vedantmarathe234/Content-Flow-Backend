@@ -13,4 +13,5 @@ public class AuthResponseDTO {
     private String email;
     private String role;
     private String departmentName;
+    private boolean isTeamLeader;
 }
