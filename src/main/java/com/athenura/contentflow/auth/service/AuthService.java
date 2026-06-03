@@ -79,6 +79,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : "All Access")
+                .isTeamLeader(user.isTeamLeader())
                 .build();
     }
 

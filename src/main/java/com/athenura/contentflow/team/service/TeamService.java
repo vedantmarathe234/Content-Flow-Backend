@@ -65,6 +65,8 @@ public class TeamService {
         team.setName(request.getName());
         team.setDepartment(department);
         team.setTeamLeader(leader);
+        leader.setTeamLeader(true);
+        userRepository.save(leader);
 
         if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
             List<User> members = userRepository.findAllById(request.getMemberIds());
@@ -95,6 +97,15 @@ public class TeamService {
                 !newLeader.getDepartment().getId().equals(team.getDepartment().getId())) {
             throw new IllegalArgumentException("Leader must be from the same department!");
         }
+        User oldLeader = team.getTeamLeader();
+
+        if (oldLeader != null) {
+            oldLeader.setTeamLeader(false);
+            userRepository.save(oldLeader);
+        }
+
+        newLeader.setTeamLeader(true);
+        userRepository.save(newLeader);
 
         team.setTeamLeader(newLeader);
 
@@ -114,10 +125,16 @@ public class TeamService {
 
     @Transactional
     public void deleteTeam(Long teamId) {
-        if (!teamRepository.existsById(teamId)) {
-            throw new ResourceNotFoundException("Team not found");
+
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+
+        if (team.getTeamLeader() != null) {
+            team.getTeamLeader().setTeamLeader(false);
+            userRepository.save(team.getTeamLeader());
         }
-        teamRepository.deleteById(teamId);
+
+        teamRepository.delete(team);
     }
 
     @Transactional(readOnly = true)

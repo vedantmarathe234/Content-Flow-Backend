@@ -1,9 +1,12 @@
 package com.athenura.contentflow.content.service;
 
+import com.athenura.contentflow.commons.enums.Role;
 import com.athenura.contentflow.content.dto.*;
 import com.athenura.contentflow.commons.enums.ContentStatus;
 import com.athenura.contentflow.content.entity.Content;
+import com.athenura.contentflow.content.entity.Notification;
 import com.athenura.contentflow.content.repository.ContentRepository;
+import com.athenura.contentflow.content.repository.NotificationRepository;
 import com.athenura.contentflow.email.dto.EmailRequest;
 import com.athenura.contentflow.email.service.EmailService;
 import com.athenura.contentflow.exception.ResourceNotFoundException;
@@ -28,6 +31,7 @@ public class ContentService {
     private final CloudinaryService cloudinaryService;
     private final EmailService emailService;
     private final com.athenura.contentflow.team.repository.TeamRepository teamRepository;
+    private final NotificationRepository notificationRepository;
 
     @Transactional
     public ContentResponse createContent(CreateContentRequest request, MultipartFile file, String email) {
@@ -71,7 +75,14 @@ public class ContentService {
 
 
         Content savedContent = contentRepository.save(content);
+
+
+
+        createNotification(savedContent);
+
         return mapToResponse(savedContent);
+
+
     }
 
     public List<ContentResponse> getAllContent() {
@@ -182,6 +193,26 @@ public class ContentService {
                 .build();
 
         emailService.sendEmail(emailRequest);
+
+        Notification notification =
+                new Notification();
+
+        notification.setUser(
+                content.getCreatedBy()
+        );
+
+        notification.setCreatedAt(
+                LocalDateTime.now()
+        );
+
+        notification.setMessage(
+                "Your content '"
+                        + content.getTitle()
+                        + "' was approved"
+        );
+        notification.setContentId(content.getId());
+        notificationRepository.save(notification);
+
         return new ApiResponse("Content approved successfully");
     }
 
@@ -214,6 +245,26 @@ public class ContentService {
                 .build();
 
         emailService.sendEmail(emailRequest);
+
+        Notification notification =
+                new Notification();
+
+        notification.setUser(
+                content.getCreatedBy()
+        );
+
+        notification.setCreatedAt(
+                LocalDateTime.now()
+        );
+
+        notification.setMessage(
+                "Your content '"
+                        + content.getTitle()
+                        + "' was rejected"
+        );
+        notification.setContentId(content.getId());
+        notificationRepository.save(notification);
+
         return new ApiResponse("Content rejected successfully");
     }
 
@@ -229,7 +280,7 @@ public class ContentService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found"));
 
-        if (!currentUser.getRole().name().equals("TEAM_LEADER")) {
+        if (!currentUser.isTeamLeader()) {
 
             throw new UnauthorizedException(
                     "Only Team Leaders can approve content"
@@ -267,6 +318,28 @@ public class ContentService {
 
         contentRepository.save(content);
 
+        List<User> admins =
+                userRepository.findByRole(Role.ADMIN);
+
+        for (User admin : admins) {
+
+            Notification notification =
+                    new Notification();
+
+            notification.setUser(admin);
+            notification.setContentId(content.getId());
+            notification.setCreatedAt(
+                    LocalDateTime.now()
+            );
+
+            notification.setMessage(
+                    content.getTitle()
+                            + " is awaiting admin approval"
+            );
+
+            notificationRepository.save(notification);
+        }
+
         return new ApiResponse(
                 "Content approved by leader and forwarded to Admin successfully"
         );
@@ -289,7 +362,17 @@ public class ContentService {
         response.setRejectionReason(content.getRejectionReason());
 
         response.setCreatedBy(content.getCreatedBy().getName());
-        response.setDepartment(content.getDepartment().getName());
+        response.setTeam(
+                content.getTeam() != null
+                        ? content.getTeam().getName()
+                        : "Individual"
+        );
+        response.setDepartment(
+                content.getDepartment() != null
+                        ? content.getDepartment().getName()
+                        : "Individual"
+        );
+
 
         response.setCreatedAt(content.getCreatedAt());
         response.setScheduledDate(content.getScheduledDate());
@@ -319,5 +402,59 @@ public class ContentService {
         }
 
         return response;
+    }
+
+    private void createNotification(Content content) {
+
+        Notification notification = new Notification();
+
+        notification.setCreatedAt(LocalDateTime.now());
+
+        if (content.getTeam() != null &&
+                content.getTeam().getTeamLeader() != null) {
+
+            notification.setUser(
+                    content.getTeam().getTeamLeader()
+            );
+
+            notification.setContentId(content.getId());
+
+            notification.setMessage(
+                    content.getCreatedBy().getName()
+                            + " submitted new content: "
+                            + content.getTitle()
+            );
+
+            notificationRepository.save(notification);
+
+        } else {
+
+            List<User> admins =
+                    userRepository.findByRole(Role.ADMIN);
+
+            for (User admin : admins) {
+
+                Notification adminNotification =
+                        new Notification();
+
+                adminNotification.setUser(admin);
+
+                adminNotification.setCreatedAt(
+                        LocalDateTime.now()
+                );
+
+                adminNotification.setContentId(content.getId());
+
+                adminNotification.setMessage(
+                        content.getCreatedBy().getName()
+                                + " submitted new content: "
+                                + content.getTitle()
+                );
+
+                notificationRepository.save(
+                        adminNotification
+                );
+            }
+        }
     }
 }

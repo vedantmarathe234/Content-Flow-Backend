@@ -15,6 +15,7 @@ public class ContentResponse {
     private ContentStatus status;
     private String rejectionReason;
     private String createdBy;
+    private String team;
     private String department;
     private LocalDateTime createdAt;
     private LocalDate scheduledDate;
