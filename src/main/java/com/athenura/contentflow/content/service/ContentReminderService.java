@@ -19,7 +19,7 @@ public class ContentReminderService {
     private final ContentRepository contentRepository;
     private final EmailService emailService;
 
-    @Scheduled(fixedRate = 10000)
+//    @Scheduled(fixedRate = 10000)
     public void sendPendingLeaderReminders() {
 
         LocalDateTime threshold =

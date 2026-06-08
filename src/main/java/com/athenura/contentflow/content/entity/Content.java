@@ -42,6 +42,9 @@ public class Content {
 
     private LocalDateTime actionDate;
 
+    private String leaderApprovedBy;
+    private String adminApprovedBy;
+
     private Boolean reminderSent = false;
 
 

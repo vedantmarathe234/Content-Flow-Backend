@@ -1,6 +1,7 @@
 package com.athenura.contentflow.content.controller;
 
 import com.athenura.contentflow.content.dto.ApiResponse;
+import com.athenura.contentflow.content.dto.RecentActivityResponse;
 import com.athenura.contentflow.content.entity.Notification;
 import com.athenura.contentflow.content.service.NotificationService;
 import lombok.Data;
@@ -37,4 +38,47 @@ public class NotificationController {
                 notificationService.markAsRead(id)
         );
     }
+
+    @PutMapping("/read-all")
+    public ResponseEntity<ApiResponse> markAllAsRead(
+            Principal principal
+    ) {
+        return ResponseEntity.ok(
+                notificationService.markAllAsRead(
+                        principal.getName()
+                )
+        );
+    }
+
+    @PutMapping("/content/{contentId}/read")
+    public ResponseEntity<ApiResponse> markByContent(
+            @PathVariable Long contentId,
+            Principal principal
+    ) {
+
+        System.out.println("MARK CONTENT READ HIT");
+        System.out.println("CONTENT ID = " + contentId);
+        System.out.println("USER = " + principal.getName());
+
+        notificationService.markNotificationsByContent(
+                contentId,
+                principal.getName()
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse(
+                        "Notifications marked as read"
+                )
+        );
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<RecentActivityResponse>>
+    getRecentActivity() {
+
+        return ResponseEntity.ok(
+                notificationService.getRecentActivity()
+        );
+    }
+
 }

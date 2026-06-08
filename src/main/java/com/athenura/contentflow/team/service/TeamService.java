@@ -36,7 +36,6 @@ public class TeamService {
                     dto.setName(user.getName());
                     dto.setEmail(user.getEmail());
                     dto.setRole(user.getRole().name());
-                    dto.setTeamLeader(user.isTeamLeader());
                     if (user.getDepartment() != null) {
                         dto.setDepartmentName(user.getDepartment().getName());
                     }
@@ -65,7 +64,7 @@ public class TeamService {
         team.setName(request.getName());
         team.setDepartment(department);
         team.setTeamLeader(leader);
-        leader.setTeamLeader(true);
+
         userRepository.save(leader);
 
         if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
@@ -100,11 +99,9 @@ public class TeamService {
         User oldLeader = team.getTeamLeader();
 
         if (oldLeader != null) {
-            oldLeader.setTeamLeader(false);
             userRepository.save(oldLeader);
         }
 
-        newLeader.setTeamLeader(true);
         userRepository.save(newLeader);
 
         team.setTeamLeader(newLeader);
@@ -130,7 +127,6 @@ public class TeamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
 
         if (team.getTeamLeader() != null) {
-            team.getTeamLeader().setTeamLeader(false);
             userRepository.save(team.getTeamLeader());
         }
 
@@ -144,15 +140,15 @@ public class TeamService {
                 .collect(Collectors.toList());
     }
     @Transactional(readOnly = true)
-    public TeamResponse getTeamByUserEmail(String email) {
+    public List<TeamResponse> getTeamsByUserEmail(String email) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        List<Team> teams = teamRepository.findByMembersContaining(user);
-        if (teams == null || teams.isEmpty()) {
-            throw new ResourceNotFoundException("You are not assigned to any team!");
-        }
-        return mapToResponse(teams.get(0));
+        return teamRepository.findByMembersContaining(user)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     private TeamResponse mapToResponse(Team team) {

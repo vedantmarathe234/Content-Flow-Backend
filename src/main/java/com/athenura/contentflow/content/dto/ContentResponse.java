@@ -15,6 +15,7 @@ public class ContentResponse {
     private ContentStatus status;
     private String rejectionReason;
     private String createdBy;
+    private Long createdById;
     private String team;
     private String department;
     private LocalDateTime createdAt;
@@ -22,4 +23,9 @@ public class ContentResponse {
     private LocalDateTime actionDate;
     private String currentStage;
     private String approvedByLeader;
+    private String approvedByAdmin;
+    private String leaderApprovedBy;
+    private String adminApprovedBy;
+
+    private Long teamLeaderId;
 }

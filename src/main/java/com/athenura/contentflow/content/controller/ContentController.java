@@ -34,6 +34,42 @@ public class ContentController {
         return ResponseEntity.ok(contentService.getAllContent());
     }
 
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<DashboardStatsResponse>
+    getDashboardStats() {
+
+        return ResponseEntity.ok(
+                contentService.getDashboardStats()
+        );
+    }
+
+    @GetMapping("/dashboard/my-stats")
+    public ResponseEntity<UserDashboardResponse>
+    getMyDashboardStats(
+            Principal principal
+    ) {
+
+        return ResponseEntity.ok(
+                contentService.getMyDashboardStats(
+                        principal.getName()
+                )
+        );
+    }
+
+    @GetMapping("/dashboard/team/{teamId}")
+    public ResponseEntity<DashboardStatsResponse> getTeamDashboard(
+            @PathVariable Long teamId,
+            Principal principal
+    ) {
+
+        return ResponseEntity.ok(
+                contentService.getTeamDashboardStats(
+                        teamId,
+                        principal.getName()
+                )
+        );
+    }
+
 
     @GetMapping("/my")
     public ResponseEntity<List<ContentResponse>> getMyContents(Principal principal) {
@@ -51,9 +87,17 @@ public class ContentController {
     public ResponseEntity<ContentResponse> updateContent(
             @PathVariable Long id,
             @RequestPart("data") CreateContentRequest request,
-            @RequestPart(value = "file", required = false) MultipartFile file
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            Principal principal
     ) {
-        return ResponseEntity.ok(contentService.updateAndResubmit(id, request, file));
+        return ResponseEntity.ok(
+                contentService.updateAndResubmit(
+                        id,
+                        request,
+                        file,
+                        principal.getName()
+                )
+        );
     }
 
 
@@ -114,5 +158,22 @@ public class ContentController {
             Principal principal
     ) {
         return ResponseEntity.ok(contentService.approveContentByLeader(id, principal.getName()));
+    }
+
+    @PreAuthorize("hasRole('INTERN')")
+    @PutMapping("/{id}/leader-reject")
+    public ResponseEntity<ApiResponse> rejectContentByLeader(
+
+            @PathVariable Long id,
+            @RequestBody RejectContentRequest request,
+            Principal principal
+    ) {
+        return ResponseEntity.ok(
+                contentService.rejectContentByLeader(
+                        id,
+                        request,
+                        principal.getName()
+                )
+        );
     }
 }

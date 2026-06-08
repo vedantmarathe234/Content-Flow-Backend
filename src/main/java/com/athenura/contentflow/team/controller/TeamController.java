@@ -6,6 +6,7 @@ import com.athenura.contentflow.team.dto.UpdateTeamRequest;
 import com.athenura.contentflow.team.service.TeamService;
 import com.athenura.contentflow.user.dto.UserResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,7 +56,11 @@ public class TeamController {
 
 
     @GetMapping("/my-team")
-    public TeamResponse getTeamByInternId(Principal principal) {
-        return teamService.getTeamByUserEmail(principal.getName());
+    public ResponseEntity<List<TeamResponse>> getMyTeam(
+            Principal principal
+    ) {
+        return ResponseEntity.ok(
+                teamService.getTeamsByUserEmail(principal.getName())
+        );
     }
 }

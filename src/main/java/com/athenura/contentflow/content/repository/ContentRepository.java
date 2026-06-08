@@ -15,4 +15,23 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             ContentStatus status,
             LocalDateTime createdAt
     );
+    long countByStatus(ContentStatus status);
+
+    long countByTeamId(Long teamId);
+
+    long countByTeamIdAndStatus(
+            Long teamId,
+            ContentStatus status
+    );
+
+    long countByTeamIdAndCreatedById(
+            Long teamId,
+            Long userId
+    );
+
+    long countByTeamIdAndCreatedByIdAndStatus(
+            Long teamId,
+            Long userId,
+            ContentStatus status
+    );
 }

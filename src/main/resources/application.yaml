@@ -5,8 +5,14 @@ spring:
   application:
     name: contentflow
 
+
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+
   datasource:
-    url: jdbc:mysql://localhost:3306/contentflowdata?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/contentflow3?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password:
@@ -16,7 +22,7 @@ spring:
       ddl-auto: update
 
 
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -34,8 +40,8 @@ app:
 
 logging:
   level:
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: OFF
 
 brevo:
   api:

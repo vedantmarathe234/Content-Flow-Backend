@@ -49,6 +49,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/notifications/**")
                         .hasAnyRole("ADMIN", "TEAM_LEADER", "INTERN")
                         .requestMatchers("/api/teams/**").hasAnyRole("ADMIN", "INTERN")
+                        .requestMatchers(
+                                "/api/departments/public"
+                        ).permitAll()
                         .requestMatchers("/api/departments/**").authenticated()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

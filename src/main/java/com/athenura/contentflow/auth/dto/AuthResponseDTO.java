@@ -8,6 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class AuthResponseDTO {
+    private Long id;
     private String token;
     private String name;
     private String email;
