@@ -48,9 +48,4 @@ public class User {
     @ManyToMany(mappedBy = "members")
     private List<Team> teams = new ArrayList<>();
 
-    @Column(name = "is_team_leader")
-    private boolean isTeamLeader = false;
-
-    public boolean isTeamLeader() { return isTeamLeader; }
-    public void setTeamLeader(boolean isTeamLeader) { this.isTeamLeader = isTeamLeader; }
 }

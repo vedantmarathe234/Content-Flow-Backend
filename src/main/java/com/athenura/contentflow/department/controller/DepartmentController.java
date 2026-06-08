@@ -81,4 +81,11 @@ public class DepartmentController {
     public void delete(@PathVariable Long id) {
         departmentService.deleteDepartment(id);
     }
+
+    @GetMapping("/public")
+    public List<Department> getPublicDepartments() {
+
+        return departmentRepository.findAll();
+
+    }
 }

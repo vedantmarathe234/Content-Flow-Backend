@@ -14,11 +14,38 @@ public class CloudinaryService implements StorageService {
     private final Cloudinary cloudinary;
 
 
-    public Map uploadFileWithDetails(MultipartFile file) {
+    public Map uploadFileWithDetails(
+            MultipartFile file
+    ) {
+
         try {
-            return cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+
+            String contentType =
+                    file.getContentType();
+
+            if (contentType != null &&
+                    contentType.startsWith("video/")) {
+
+                return cloudinary.uploader().upload(
+                        file.getBytes(),
+                        ObjectUtils.asMap(
+                                "resource_type",
+                                "video"
+                        )
+                );
+            }
+
+            return cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.emptyMap()
+            );
+
         } catch (Exception e) {
-            throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
+
+            throw new RuntimeException(
+                    "Cloudinary upload failed: "
+                            + e.getMessage()
+            );
         }
     }
 
@@ -34,11 +61,44 @@ public class CloudinaryService implements StorageService {
 
     @Override
     public String uploadFile(MultipartFile file) {
+
         try {
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
-            return uploadResult.get("url").toString();
+
+            String contentType =
+                    file.getContentType();
+
+            Map uploadResult;
+
+            if (contentType != null &&
+                    contentType.startsWith("video/")) {
+
+                uploadResult =
+                        cloudinary.uploader().upload(
+                                file.getBytes(),
+                                ObjectUtils.asMap(
+                                        "resource_type",
+                                        "video"
+                                )
+                        );
+
+            } else {
+
+                uploadResult =
+                        cloudinary.uploader().upload(
+                                file.getBytes(),
+                                ObjectUtils.emptyMap()
+                        );
+            }
+
+            return uploadResult.get("url")
+                    .toString();
+
         } catch (Exception e) {
-            throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
+
+            throw new RuntimeException(
+                    "Cloudinary upload failed: "
+                            + e.getMessage()
+            );
         }
     }
 

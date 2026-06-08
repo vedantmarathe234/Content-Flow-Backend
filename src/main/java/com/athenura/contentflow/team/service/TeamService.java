@@ -36,7 +36,6 @@ public class TeamService {
                     dto.setName(user.getName());
                     dto.setEmail(user.getEmail());
                     dto.setRole(user.getRole().name());
-                    dto.setTeamLeader(user.isTeamLeader());
                     if (user.getDepartment() != null) {
                         dto.setDepartmentName(user.getDepartment().getName());
                     }
@@ -65,6 +64,8 @@ public class TeamService {
         team.setName(request.getName());
         team.setDepartment(department);
         team.setTeamLeader(leader);
+
+        userRepository.save(leader);
 
         if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
             List<User> members = userRepository.findAllById(request.getMemberIds());
@@ -95,6 +96,13 @@ public class TeamService {
                 !newLeader.getDepartment().getId().equals(team.getDepartment().getId())) {
             throw new IllegalArgumentException("Leader must be from the same department!");
         }
+        User oldLeader = team.getTeamLeader();
+
+        if (oldLeader != null) {
+            userRepository.save(oldLeader);
+        }
+
+        userRepository.save(newLeader);
 
         team.setTeamLeader(newLeader);
 
@@ -114,10 +122,15 @@ public class TeamService {
 
     @Transactional
     public void deleteTeam(Long teamId) {
-        if (!teamRepository.existsById(teamId)) {
-            throw new ResourceNotFoundException("Team not found");
+
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+
+        if (team.getTeamLeader() != null) {
+            userRepository.save(team.getTeamLeader());
         }
-        teamRepository.deleteById(teamId);
+
+        teamRepository.delete(team);
     }
 
     @Transactional(readOnly = true)
@@ -127,15 +140,15 @@ public class TeamService {
                 .collect(Collectors.toList());
     }
     @Transactional(readOnly = true)
-    public TeamResponse getTeamByUserEmail(String email) {
+    public List<TeamResponse> getTeamsByUserEmail(String email) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        List<Team> teams = teamRepository.findByMembersContaining(user);
-        if (teams == null || teams.isEmpty()) {
-            throw new ResourceNotFoundException("You are not assigned to any team!");
-        }
-        return mapToResponse(teams.get(0));
+        return teamRepository.findByMembersContaining(user)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     private TeamResponse mapToResponse(Team team) {
