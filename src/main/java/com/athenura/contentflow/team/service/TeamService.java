@@ -174,9 +174,14 @@ public class TeamService {
             response.setMemberIds(team.getMembers().stream()
                     .map(User::getId)
                     .collect(Collectors.toList()));
+
+            response.setMemberPhotoUrls(team.getMembers().stream()
+                    .map(User::getProfilePhotoUrl)
+                    .collect(Collectors.toList()));
         } else {
             response.setMemberNames(new ArrayList<>());
             response.setMemberIds(new ArrayList<>());
+            response.setMemberPhotoUrls(new ArrayList<>());
         }
 
         return response;

@@ -12,10 +12,10 @@ spring:
       max-request-size: 200MB
 
   datasource:
-    url: jdbc:mysql://localhost:3306/contentflow3?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/contentflowdata?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password:
+    password: vedant123
 
   jpa:
     hibernate:
@@ -45,7 +45,8 @@ logging:
 
 brevo:
   api:
-    key:
+    key: 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
+
   sender:
-    email:
-    name:
+    email: marathevedant123@gmail.com
+    name: vedant

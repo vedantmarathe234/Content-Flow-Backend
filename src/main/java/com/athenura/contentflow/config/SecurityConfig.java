@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/email/**").permitAll()
                         .requestMatchers("/api/content/**").permitAll()
                         .requestMatchers("/api/notifications/**")
@@ -53,7 +54,8 @@ public class SecurityConfig {
                                 "/api/departments/public"
                         ).permitAll()
                         .requestMatchers("/api/departments/**").authenticated()
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").hasAnyRole("ADMIN", "INTERN")
+                        .requestMatchers("/api/search/**").hasAnyRole("ADMIN", "INTERN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

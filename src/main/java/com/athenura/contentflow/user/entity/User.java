@@ -3,6 +3,7 @@ package com.athenura.contentflow.user.entity;
 import com.athenura.contentflow.commons.enums.Role;
 import com.athenura.contentflow.department.entity.Department;
 import com.athenura.contentflow.team.entity.Team;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,6 +17,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "teams", "teamsLed", "password"})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,11 +43,10 @@ public class User {
 
     private String resetToken;
 
-    @OneToMany(mappedBy = "teamLeader")
+    @OneToMany(mappedBy = "teamLeader", fetch = FetchType.EAGER)
     private List<Team> teamsLed = new ArrayList<>();
 
-
-    @ManyToMany(mappedBy = "members")
+    @ManyToMany(mappedBy = "members", fetch = FetchType.EAGER)
     private List<Team> teams = new ArrayList<>();
 
 }

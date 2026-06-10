@@ -38,6 +38,17 @@ public class AuthController {
         return authService.forgotPassword(request);
     }
 
+    @PostMapping("/change-password")
+    public String changePassword(
+            @RequestBody ChangePasswordRequestDTO request,
+            @RequestHeader("Authorization") String token
+    ) {
+        return authService.changePassword(
+                request,
+                token
+        );
+    }
+
     @PostMapping("/reset-password")
     public String resetPassword(
             @RequestBody ResetPasswordRequestDTO request

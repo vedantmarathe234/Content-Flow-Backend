@@ -113,6 +113,13 @@ public class ContentService {
                 .collect(Collectors.toList());
     }
 
+
+    public List<ContentResponse> getContentByTeamId(Long teamId) {
+        return contentRepository.findByTeamId(teamId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<ContentResponse> getMyContents(String email) {
         return contentRepository.findByCreatedByEmail(email).stream()
                 .map(this::mapToResponse)
@@ -598,7 +605,7 @@ public class ContentService {
 
         else if (content.getStatus() == ContentStatus.APPROVED) {
 
-            response.setCurrentStage("Final Approved by Admin");
+            response.setCurrentStage("Approved by Admin");
 
             response.setApprovedByLeader(
                     content.getLeaderApprovedBy() != null

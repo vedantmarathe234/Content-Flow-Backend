@@ -34,6 +34,10 @@ public class ContentController {
         return ResponseEntity.ok(contentService.getAllContent());
     }
 
+    @GetMapping("/team/{teamId}/list")
+    public ResponseEntity<List<ContentResponse>> getContentByTeamId(@PathVariable Long teamId) {
+        return ResponseEntity.ok(contentService.getContentByTeamId(teamId));
+    }
     @GetMapping("/dashboard/stats")
     public ResponseEntity<DashboardStatsResponse>
     getDashboardStats() {

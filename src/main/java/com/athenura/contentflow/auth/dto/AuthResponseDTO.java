@@ -13,6 +13,7 @@ public class AuthResponseDTO {
     private String name;
     private String email;
     private String role;
+    private String profilePhotoUrl;
     private String departmentName;
     private boolean isTeamLeader;
 }

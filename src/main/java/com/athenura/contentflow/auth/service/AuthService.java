@@ -79,6 +79,7 @@ public class AuthService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .profilePhotoUrl(user.getProfilePhotoUrl())
                 .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : "All Access")
                 .build();
     }
@@ -149,6 +150,35 @@ public class AuthService {
         emailService.sendEmail(emailRequest);
 
         return "Reset link sent to email";
+    }
+
+    public String changePassword(
+            ChangePasswordRequestDTO request,
+            String authHeader
+    ) {
+        String jwt = authHeader.substring(7);
+
+        String email = jwtUtil.extractEmail(jwt);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(
+                request.getCurrentPassword(),
+                user.getPassword()
+        )) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPassword(
+                passwordEncoder.encode(
+                        request.getNewPassword()
+                )
+        );
+
+        userRepository.save(user);
+
+        return "Password changed successfully";
     }
 
 

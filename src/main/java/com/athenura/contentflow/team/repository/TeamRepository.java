@@ -25,4 +25,5 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     @Query("SELECT DISTINCT t FROM Team t LEFT JOIN FETCH t.members")
     List<Team> findAllWithMembers();
+    List<Team> findByNameContainingIgnoreCase(String name);
 }

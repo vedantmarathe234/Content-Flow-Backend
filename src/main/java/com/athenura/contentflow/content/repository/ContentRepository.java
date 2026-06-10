@@ -11,6 +11,7 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
     List<Content> findByStatus(ContentStatus status);
     List<Content> findByDepartmentId(Long departmentId);
     List<Content> findByCreatedByEmail(String email);
+    List<Content> findByTeamId(Long teamId);
     List<Content> findByStatusAndCreatedAtBefore(
             ContentStatus status,
             LocalDateTime createdAt

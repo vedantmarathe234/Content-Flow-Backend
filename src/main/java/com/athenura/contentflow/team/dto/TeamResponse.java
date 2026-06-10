@@ -13,4 +13,5 @@ public class TeamResponse {
     private String teamLeaderName;
     private List<String> memberNames;
     private List<Long> memberIds;
+    private List<String> memberPhotoUrls;
 }
