@@ -26,6 +26,6 @@ public class ContentResponse {
     private String approvedByAdmin;
     private String leaderApprovedBy;
     private String adminApprovedBy;
-
+    private String profilePhotoUrl;
     private Long teamLeaderId;
 }

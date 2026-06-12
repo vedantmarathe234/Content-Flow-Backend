@@ -46,7 +46,6 @@ logging:
 brevo:
   api:
     key:
-
   sender:
     email:
     name:

@@ -124,6 +124,7 @@ public class EmailService {
     private String executeRequest(Request request) {
         try (Response response = okHttpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
+                assert response.body() != null;
                 throw new RuntimeException("Brevo API request failed: " + response.body().string());
             }
             return "Email sent successfully";

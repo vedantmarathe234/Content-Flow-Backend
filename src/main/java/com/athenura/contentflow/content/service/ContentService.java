@@ -279,7 +279,7 @@ public class ContentService {
                 )
                 .build();
 
-        emailService.sendEmail(emailRequest);
+        //emailService.sendEmail(emailRequest);
 
         Notification notification =
                 new Notification();
@@ -331,7 +331,7 @@ public class ContentService {
                 )
                 .build();
 
-        emailService.sendEmail(emailRequest);
+        //emailService.sendEmail(emailRequest);
 
         Notification notification =
                 new Notification();
@@ -526,6 +526,7 @@ public class ContentService {
     private ContentResponse mapToResponse(Content content) {
         ContentResponse response = new ContentResponse();
         response.setId(content.getId());
+        response.setProfilePhotoUrl(content.getCreatedBy().getProfilePhotoUrl());
         response.setTitle(content.getTitle());
         response.setDescription(content.getDescription());
         response.setMediaUrl(content.getMediaUrl());
