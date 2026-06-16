@@ -1,14 +1,16 @@
 package com.athenura.contentflow.content.service;
 
 import com.athenura.contentflow.commons.enums.ContentStatus;
+import com.athenura.contentflow.commons.enums.Role;
 import com.athenura.contentflow.content.entity.Content;
 import com.athenura.contentflow.content.repository.ContentRepository;
-import com.athenura.contentflow.email.dto.EmailRequest;
-import com.athenura.contentflow.email.service.EmailService;
+import com.athenura.contentflow.email.service.EmailNotificationService;
+import com.athenura.contentflow.user.entity.User;
+import com.athenura.contentflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,51 +19,50 @@ import java.util.List;
 public class ContentReminderService {
 
     private final ContentRepository contentRepository;
-    private final EmailService emailService;
+    private final EmailNotificationService emailNotificationService;
+    private final UserRepository userRepository;
 
-//    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 3600000)
+    @Transactional(readOnly = true)
     public void sendPendingLeaderReminders() {
 
-        LocalDateTime threshold =
-                LocalDateTime.now().minusSeconds(15);
+        LocalDateTime threshold = LocalDateTime.now().minusHours(36);
+        List<Content> contents = contentRepository.findByReminderSentFalseAndCreatedAtBefore(threshold);
 
-        List<Content> pendingContents =
-                contentRepository
-                        .findByStatusAndCreatedAtBefore(
-                                ContentStatus.PENDING,
-                                threshold
-                        );
+        if (contents.isEmpty()) {
+            return;
+        }
 
-        for (Content content : pendingContents) {
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
 
-            if(content.getTeam() == null
-                    || content.getTeam().getTeamLeader() == null){
+        for (Content content : contents) {
+            if (content.getStatus() == ContentStatus.APPROVED || content.getStatus() == ContentStatus.REJECTED) {
                 continue;
             }
 
-            String leaderEmail =
-                    content.getTeam()
-                            .getTeamLeader()
-                            .getEmail();
+            boolean isIndividual = (content.getTeam() == null);
 
-            EmailRequest request =
-                    EmailRequest.builder()
-                            .to(leaderEmail)
-                            .subject("Content Pending For Review")
-                            .body(
-                                    "<h2>Reminder: Content Pending Review</h2>" +
-                                            "<p><b>Title:</b> "
-                                            + content.getTitle() + "</p>" +
-                                            "<p>This content is pending for more than 36 hours.</p>"
-                            )
-                            .build();
+            if (content.getStatus() == ContentStatus.PENDING_LEADER) {
+                if (!isIndividual && content.getTeam().getTeamLeader() != null) {
+                    emailNotificationService.sendTeamPendingReminder(content);
+                    content.setReminderSent(true);
+                    contentRepository.save(content);
+                }
+                continue;
+            }
 
-            emailService.sendEmail(request);
-            System.out.println(
-                    "Reminder running for content id: "
-                            + content.getId()
-            );
 
+            if (content.getStatus() == ContentStatus.PENDING) {
+                for (User admin : admins) {
+                    emailNotificationService.sendAdminPendingReminder(content, admin);
+                }
+
+                if (isIndividual) {
+                    emailNotificationService.sendCreatorPendingReminder(content);
+                }
+                content.setReminderSent(true);
+                contentRepository.save(content);
+            }
         }
     }
 }
