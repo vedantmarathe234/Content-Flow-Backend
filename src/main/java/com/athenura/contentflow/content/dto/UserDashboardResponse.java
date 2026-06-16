@@ -2,11 +2,15 @@ package com.athenura.contentflow.content.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class UserDashboardResponse {
 
-    private long totalContent;
-    private long pending;
-    private long approved;
-    private long rejected;
+    private Long totalContent;
+    private int pendingLeader;
+    private int pendingAdmin;
+    private int approved;
+    private int rejected;
+    private List<DashboardStatsResponse.DayActivityDTO> weeklyActivity;
 }

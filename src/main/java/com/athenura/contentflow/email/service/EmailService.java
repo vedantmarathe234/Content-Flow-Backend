@@ -50,24 +50,28 @@ public class EmailService {
         this.userRepository = userRepository;
     }
 
-    public String sendEmail(EmailRequest emailRequest) {
+    public String sendEmail(EmailRequest emailRequest, boolean isIndividual) {
         validateEmailRequest(emailRequest);
 
         try {
             String targetEmail = emailRequest.getTo();
-            Optional<User> userOptional = userRepository.findByEmail(targetEmail);
 
-            if (userOptional.isPresent()) {
-                User user = userOptional.get();
 
-                if (user.getRole() == Role.INTERN &&
-                        user.getTeams() != null &&
-                        !user.getTeams().isEmpty()) {
+            if (!isIndividual) {
+                Optional<User> userOptional = userRepository.findByEmail(targetEmail);
 
-                    Team firstTeam = user.getTeams().get(0);
-                    if (firstTeam.getTeamLeader() != null) {
-                        targetEmail = firstTeam.getTeamLeader().getEmail();
-                        emailRequest.setTo(targetEmail);
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
+
+                    if (user.getRole() == Role.INTERN &&
+                            user.getTeams() != null &&
+                            !user.getTeams().isEmpty()) {
+
+                        Team firstTeam = user.getTeams().get(0);
+                        if (firstTeam.getTeamLeader() != null) {
+                            targetEmail = firstTeam.getTeamLeader().getEmail();
+                            emailRequest.setTo(targetEmail);
+                        }
                     }
                 }
             }
@@ -81,6 +85,11 @@ public class EmailService {
         } catch (Exception exception) {
             throw new RuntimeException("Failed to send email", exception);
         }
+    }
+
+
+    public String sendEmail(EmailRequest emailRequest) {
+        return sendEmail(emailRequest, false);
     }
 
     private void validateEmailRequest(EmailRequest emailRequest) {

@@ -1,16 +1,21 @@
 package com.athenura.contentflow.search.dto;
 
-import com.athenura.contentflow.department.entity.Department;
-import com.athenura.contentflow.team.entity.Team;
-import com.athenura.contentflow.user.entity.User;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
+import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
 public class SearchResponse {
+    private List<SearchResultItem> users;
+    private List<SearchResultItem> teams;
+    private List<SearchResultItem> departments;
 
-    private List<User> users;
-    private List<Team> teams;
-    private List<Department> departments;
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class SearchResultItem {
+        private Long id;
+        private String name;
+    }
 }

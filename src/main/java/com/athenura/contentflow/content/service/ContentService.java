@@ -8,8 +8,7 @@ import com.athenura.contentflow.content.entity.Notification;
 import com.athenura.contentflow.content.repository.ContentRepository;
 import com.athenura.contentflow.content.repository.NotificationRepository;
 import com.athenura.contentflow.department.repository.DepartmentRepository;
-import com.athenura.contentflow.email.dto.EmailRequest;
-import com.athenura.contentflow.email.service.EmailService;
+import com.athenura.contentflow.email.service.EmailNotificationService;
 import com.athenura.contentflow.exception.ResourceNotFoundException;
 import com.athenura.contentflow.exception.UnauthorizedException;
 import com.athenura.contentflow.team.entity.Team;
@@ -19,7 +18,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,10 +34,12 @@ public class ContentService {
     private final ContentRepository contentRepository;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
-    private final EmailService emailService;
     private final com.athenura.contentflow.team.repository.TeamRepository teamRepository;
     private final NotificationRepository notificationRepository;
     private final DepartmentRepository departmentRepository;
+    private final WebSocketNotificationService webSocketNotificationService;
+    private final EmailNotificationService emailNotificationService;
+
 
     @Transactional
     public ContentResponse createContent(CreateContentRequest request, MultipartFile file, String email) {
@@ -94,6 +99,8 @@ public class ContentService {
             content.setTeam(null);
             content.setStatus(ContentStatus.PENDING);
         }
+
+
 
 
         Content savedContent = contentRepository.save(content);
@@ -193,21 +200,22 @@ public class ContentService {
 
         if (content.getTeam() != null) {
 
-            content.setStatus(
-                    ContentStatus.PENDING_LEADER
-            );
+            boolean isLeaderResubmitting = content.getTeam().getTeamLeader() != null
+                    && content.getTeam().getTeamLeader().getId().equals(currentUser.getId());
 
+            if (isLeaderResubmitting) {
+                content.setStatus(ContentStatus.PENDING);
+            } else {
+                content.setStatus(ContentStatus.PENDING_LEADER);
+            }
         } else {
-
-            content.setStatus(
-                    ContentStatus.PENDING
-            );
-
+            content.setStatus(ContentStatus.PENDING);
         }
         content.setRejectionReason(null);
         content.setLeaderApprovedBy(null);
         content.setAdminApprovedBy(null);
         content.setActionDate(null);
+        content.setReminderSent(false);
         Content savedContent = contentRepository.save(content);
         createResubmissionNotification(savedContent);
         return mapToResponse(savedContent);
@@ -266,20 +274,12 @@ public class ContentService {
         content.setAdminApprovedBy(
                 currentUser.getName()
         );
+
+        content.setReminderSent(true);
         contentRepository.save(content);
 
-        EmailRequest emailRequest = EmailRequest.builder()
-                .to(content.getCreatedBy().getEmail())
-                .subject("Content Approved Successfully")
-                .body(
-                        "<h2>Your content has been approved</h2>" +
-                                "<p><b>Title:</b> " + content.getTitle() + "</p>" +
-                                "<p><b>Department:</b> " + content.getDepartment().getName() + "</p>" +
-                                "<p><b>Status:</b> APPROVED</p>"
-                )
-                .build();
-
-        //emailService.sendEmail(emailRequest);
+        emailNotificationService
+                .sendAdminApprovalEmail(content);
 
         Notification notification =
                 new Notification();
@@ -299,6 +299,10 @@ public class ContentService {
         );
         notification.setContentId(content.getId());
         notificationRepository.save(notification);
+        webSocketNotificationService.sendToUser(
+                notification.getUser().getId(),
+                notification
+        );
 
         return new ApiResponse("Content approved successfully");
     }
@@ -318,20 +322,20 @@ public class ContentService {
         content.setStatus(ContentStatus.REJECTED);
         content.setRejectionReason(request.getReason());
         content.setActionDate(LocalDateTime.now());
+
+
+        content.setAdminApprovedBy(
+                "Rejected by " + currentUser.getName()
+        );
+
+        content.setReminderSent(true);
         contentRepository.save(content);
 
-        EmailRequest emailRequest = EmailRequest.builder()
-                .to(content.getCreatedBy().getEmail())
-                .subject("Content Rejected")
-                .body(
-                        "<h2>Your content was rejected</h2>" +
-                                "<p><b>Title:</b> " + content.getTitle() + "</p>" +
-                                "<p><b>Status:</b> REJECTED</p>" +
-                                "<p><b>Reason:</b> " + request.getReason() + "</p>"
-                )
-                .build();
-
-        //emailService.sendEmail(emailRequest);
+        emailNotificationService
+                .sendAdminRejectionEmail(
+                        content,
+                        request.getReason()
+                );
 
         Notification notification =
                 new Notification();
@@ -344,9 +348,7 @@ public class ContentService {
                 LocalDateTime.now()
         );
 
-        content.setAdminApprovedBy(
-                "Rejected by " + currentUser.getName()
-        );
+
 
         notification.setMessage(
                 "Your content '"
@@ -356,6 +358,10 @@ public class ContentService {
         );
         notification.setContentId(content.getId());
         notificationRepository.save(notification);
+        webSocketNotificationService.sendToUser(
+                notification.getUser().getId(),
+                notification
+        );
 
         return new ApiResponse("Content rejected successfully");
     }
@@ -406,6 +412,9 @@ public class ContentService {
                 currentUser.getName()
         );
 
+
+        content.setReminderSent(false);
+
         contentRepository.save(content);
 
         List<User> admins =
@@ -428,6 +437,10 @@ public class ContentService {
             );
 
             notificationRepository.save(notification);
+            webSocketNotificationService.sendToUser(
+                    notification.getUser().getId(),
+                    notification
+            );
         }
 
         return new ApiResponse(
@@ -487,7 +500,14 @@ public class ContentService {
                 "Rejected by " + currentUser.getName()
         );
 
+        content.setReminderSent(true);
         contentRepository.save(content);
+
+        emailNotificationService
+                .sendLeaderRejectionEmail(
+                        content,
+                        request.getReason()
+                );
 
         Notification notification =
                 new Notification();
@@ -511,6 +531,10 @@ public class ContentService {
         );
 
         notificationRepository.save(notification);
+        webSocketNotificationService.sendToUser(
+                notification.getUser().getId(),
+                notification
+        );
 
         return new ApiResponse(
                 "Content rejected by leader"
@@ -653,19 +677,12 @@ public class ContentService {
     }
 
     private void createNotification(Content content) {
-
         Notification notification = new Notification();
-
         notification.setCreatedAt(LocalDateTime.now());
 
         if (content.getStatus() == ContentStatus.PENDING_LEADER) {
-
-            notification.setUser(
-                    content.getTeam().getTeamLeader()
-            );
-
+            notification.setUser(content.getTeam().getTeamLeader());
             notification.setContentId(content.getId());
-
             notification.setMessage(
                     content.getCreatedBy().getName()
                             + " submitted new content: "
@@ -674,31 +691,36 @@ public class ContentService {
 
             notificationRepository.save(notification);
 
+            webSocketNotificationService.sendToUser(
+                    notification.getUser().getId(),
+                    notification
+            );
+
         } else {
 
-            List<User> admins =
-                    userRepository.findByRole(Role.ADMIN);
+            List<User> admins = userRepository.findByRole(Role.ADMIN);
+
+            boolean isTeamLeaderUpload = content.getTeam() != null
+                    && content.getTeam().getTeamLeader() != null
+                    && content.getCreatedBy().getId().equals(content.getTeam().getTeamLeader().getId());
+
+
+            String message = isTeamLeaderUpload
+                    ? content.getCreatedBy().getName() + " (Team Leader) submitted new content: " + content.getTitle()
+                    : content.getCreatedBy().getName() + " submitted new content: " + content.getTitle();
 
             for (User admin : admins) {
-
-                Notification adminNotification =
-                        new Notification();
-
+                Notification adminNotification = new Notification();
                 adminNotification.setUser(admin);
-
-                adminNotification.setCreatedAt(
-                        LocalDateTime.now()
-                );
-
+                adminNotification.setCreatedAt(LocalDateTime.now());
                 adminNotification.setContentId(content.getId());
-
-                adminNotification.setMessage(
-                        content.getCreatedBy().getName()
-                                + " submitted new content: "
-                                + content.getTitle()
-                );
+                adminNotification.setMessage(message);
 
                 notificationRepository.save(adminNotification);
+                webSocketNotificationService.sendToUser(
+                        adminNotification.getUser().getId(),
+                        adminNotification
+                );
             }
         }
     }
@@ -731,6 +753,10 @@ public class ContentService {
             );
 
             notificationRepository.save(notification);
+            webSocketNotificationService.sendToUser(
+                    notification.getUser().getId(),
+                    notification
+            );
 
         } else {
 
@@ -759,6 +785,10 @@ public class ContentService {
                 );
 
                 notificationRepository.save(notification);
+                webSocketNotificationService.sendToUser(
+                        notification.getUser().getId(),
+                        notification
+                );
             }
         }
     }
@@ -808,53 +838,80 @@ public class ContentService {
                 userRepository.count()
         );
 
+        Map<String, Long> weeklyMap = new LinkedHashMap<>();
+        weeklyMap.put("Mon", 0L);
+        weeklyMap.put("Tue", 0L);
+        weeklyMap.put("Wed", 0L);
+        weeklyMap.put("Thu", 0L);
+        weeklyMap.put("Fri", 0L);
+        weeklyMap.put("Sat", 0L);
+        weeklyMap.put("Sun", 0L);
+
+        try {
+
+            LocalDateTime startOfWeek = LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay();
+            List<Object[]> rawData = contentRepository.countContentGroupedByDay(startOfWeek);
+
+            for (Object[] row : rawData) {
+                String fullDayName = String.valueOf(row[0]);
+                long count = ((Number) row[1]).longValue();
+
+
+                String shortKey = fullDayName.substring(0, 3);
+                if (weeklyMap.containsKey(shortKey)) {
+                    weeklyMap.put(shortKey, count);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error aggregating chart values: " + e.getMessage());
+        }
+
+
+        List<DashboardStatsResponse.DayActivityDTO> activityList = new ArrayList<>();
+        weeklyMap.forEach((day, count) ->
+                activityList.add(new DashboardStatsResponse.DayActivityDTO(day, count))
+        );
+
+        response.setWeeklyActivity(activityList);
+
+
+        List<Object[]> deptRows = departmentRepository.getDepartmentContentCounts();
+        List<DashboardStatsResponse.DepartmentCountDTO> topDeptsList = new ArrayList<>();
+
+        for (Object[] row : deptRows) {
+            String deptName = String.valueOf(row[0]);
+            long count = ((Number) row[1]).longValue();
+            topDeptsList.add(new DashboardStatsResponse.DepartmentCountDTO(deptName, count));
+        }
+
+        response.setTopDepartments(topDeptsList);
+
         return response;
     }
 
-    public UserDashboardResponse getMyDashboardStats(
-            String email
-    ) {
+    public UserDashboardResponse getMyDashboardStats(String email) {
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        List<Content> contents =
-                contentRepository
-                        .findByCreatedByEmail(email);
+        List<Content> contents = contentRepository.findByCreatedByEmail(email);
+        UserDashboardResponse response = new UserDashboardResponse();
 
-        UserDashboardResponse response =
-                new UserDashboardResponse();
 
-        response.setTotalContent(
-                contents.size()
-        );
+        response.setTotalContent((long) contents.size());
 
-        response.setPending(
-                contents.stream()
-                        .filter(c ->
-                                c.getStatus() ==
-                                        ContentStatus.PENDING
-                                        ||
-                                        c.getStatus() ==
-                                                ContentStatus.PENDING_LEADER
-                        )
-                        .count()
-        );
 
-        response.setApproved(
-                contents.stream()
-                        .filter(c ->
-                                c.getStatus() ==
-                                        ContentStatus.APPROVED
-                        )
-                        .count()
-        );
+        long leaderPending = contents.stream().filter(c -> c.getStatus() == ContentStatus.PENDING_LEADER).count();
+        long adminPending = contents.stream().filter(c -> c.getStatus() == ContentStatus.PENDING).count();
+        long approved = contents.stream().filter(c -> c.getStatus() == ContentStatus.APPROVED).count();
+        long rejected = contents.stream().filter(c -> c.getStatus() == ContentStatus.REJECTED).count();
 
-        response.setRejected(
-                contents.stream()
-                        .filter(c ->
-                                c.getStatus() ==
-                                        ContentStatus.REJECTED
-                        )
-                        .count()
-        );
+
+        response.setPendingLeader((int) leaderPending);
+        response.setPendingAdmin((int) adminPending);
+        response.setApproved((int) approved);
+        response.setRejected((int) rejected);
+
+        response.setWeeklyActivity(fetchWeeklyActivityData(null, currentUser.getId()));
 
         return response;
     }
@@ -921,6 +978,8 @@ public class ContentService {
                     )
             );
 
+            response.setWeeklyActivity(fetchWeeklyActivityData(teamId, null));
+
         } else {
 
             response.setTotalContent(
@@ -961,8 +1020,47 @@ public class ContentService {
                             ContentStatus.REJECTED
                     )
             );
+
+            response.setWeeklyActivity(fetchWeeklyActivityData(null, currentUser.getId()));
         }
 
         return response;
+    }
+
+    private List<DashboardStatsResponse.DayActivityDTO> fetchWeeklyActivityData(Long teamId, Long userId) {
+        Map<String, Long> weeklyMap = new LinkedHashMap<>();
+        weeklyMap.put("Mon", 0L);
+        weeklyMap.put("Tue", 0L);
+        weeklyMap.put("Wed", 0L);
+        weeklyMap.put("Thu", 0L);
+        weeklyMap.put("Fri", 0L);
+        weeklyMap.put("Sat", 0L);
+        weeklyMap.put("Sun", 0L);
+
+        try {
+            LocalDateTime startOfWeek = LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay();
+            List<Object[]> rawData;
+
+            if (teamId != null) {
+                rawData = contentRepository.countTeamContentGroupedByDay(teamId, startOfWeek);
+            } else {
+                rawData = contentRepository.countUserContentGroupedByDay(userId, startOfWeek);
+            }
+
+            for (Object[] row : rawData) {
+                String fullDayName = String.valueOf(row[0]);
+                long count = ((Number) row[1]).longValue();
+                String shortKey = fullDayName.substring(0, 3);
+                if (weeklyMap.containsKey(shortKey)) {
+                    weeklyMap.put(shortKey, count);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error aggregating user/team chart values: " + e.getMessage());
+        }
+
+        List<DashboardStatsResponse.DayActivityDTO> activityList = new ArrayList<>();
+        weeklyMap.forEach((day, count) -> activityList.add(new DashboardStatsResponse.DayActivityDTO(day, count)));
+        return activityList;
     }
 }
