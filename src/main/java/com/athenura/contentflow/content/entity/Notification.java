@@ -27,4 +27,10 @@ public class Notification {
     private User user;
 
     private Long contentId;
+
+    @Transient
+    private String teamName;
+
+    @Transient
+    private String departmentName;
 }

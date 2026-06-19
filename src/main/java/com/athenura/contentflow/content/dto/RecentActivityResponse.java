@@ -10,5 +10,8 @@ public class RecentActivityResponse {
 
     private String message;
     private LocalDateTime createdAt;
+    private Long creatorId;
+    private String teamName;
+    private String departmentName;
 
 }
