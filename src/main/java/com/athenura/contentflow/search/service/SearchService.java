@@ -23,7 +23,11 @@ public class SearchService {
 
         response.setUsers(
                 userRepository.findByNameContainingIgnoreCase(query).stream()
-                        .map(u -> new SearchResultItem(u.getId(), u.getName()))
+                        .map(u -> {
+
+                            Long deptId = (u.getDepartment() != null) ? u.getDepartment().getId() : null;
+                            return new SearchResultItem(u.getId(), u.getName(), deptId);
+                        })
                         .collect(Collectors.toList())
         );
 

@@ -11,5 +11,6 @@ public class UserResponseDTO {
     private String departmentName;
     private String profilePhotoUrl;
     private boolean teamLeader;
+    private long departmentId;
 
     }

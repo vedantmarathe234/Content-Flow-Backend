@@ -17,5 +17,12 @@ public class SearchResponse {
     public static class SearchResultItem {
         private Long id;
         private String name;
+        private Long departmentId;
+
+
+        public SearchResultItem(Long id, String name) {
+            this.id = id;
+            this.name = name;
+        }
     }
 }
