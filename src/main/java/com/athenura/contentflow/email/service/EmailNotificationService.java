@@ -56,9 +56,9 @@ public class EmailNotificationService {
                 + "</div>";
     }
 
-    private String buildRejectionButton(String bgColor) {
+    private String buildRejectionButton(String redirectUrl) {
         return "<div style=\"margin-top: 20px; text-align: center;\">"
-                + "  <a href=\"http://localhost:5173/auth\" style=\"background-color: " + bgColor + "; color: #ffffff; padding: 10px 22px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px; display: inline-block; font-family: 'Segoe UI', sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.06);\">"
+                + "  <a href=\"" + redirectUrl + "\" style=\"background-color: #dc2626; color: #ffffff; padding: 10px 22px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px; display: inline-block; font-family: 'Segoe UI', sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.06);\">"
                 + "      Click here to login to ContentFlow to resubmit"
                 + "  </a>"
                 + "</div>";
@@ -128,7 +128,10 @@ public class EmailNotificationService {
         String creatorRows = buildTableRow("Content Title", content.getTitle(), true)
                 + buildTableRow("Status", "REJECTED", false)
                 + buildTableRow("Rejected By", content.getAdminApprovedBy() != null ? content.getAdminApprovedBy() : "Admin", true);
-        String adminButton = buildRejectionButton("#dc2626");
+
+        // 🎯 TARGET THE DIRECT VIEW LINK RATHER THAN LIST PATHS
+        String targetUrl = "http://localhost:5173/content/direct-view?contentId=" + content.getId();
+        String adminButton = buildRejectionButton(targetUrl);
 
         String creatorCallout = buildCallout(
                 "<strong>Reason for Rejection:</strong> " + reason,
@@ -194,7 +197,9 @@ public class EmailNotificationService {
                 + buildTableRow("Status", "REJECTED", false)
                 + buildTableRow("Rejected By", content.getLeaderApprovedBy() != null ? content.getLeaderApprovedBy() : "Team Leader", true);
 
-        String leaderButton = buildRejectionButton("#d97706");
+        // 🎯 TARGET THE DIRECT VIEW LINK RATHER THAN LIST PATHS
+        String targetUrl = "http://localhost:5173/content/direct-view?contentId=" + content.getId();
+        String leaderButton = buildRejectionButton(targetUrl);
 
         String callout = buildCallout(
                 "<strong>Reason for Rejection:</strong> " + reason,
@@ -220,7 +225,6 @@ public class EmailNotificationService {
                 true
         );
     }
-
     public void sendTeamPendingReminder(Content content) {
         User leader = content.getTeam().getTeamLeader();
 
